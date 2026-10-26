@@ -6,21 +6,21 @@
     <title>MOSHIHOLIC - 漢検模試成績管理＆誤答ノート</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome for icons -->
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Custom Theme Colors -->
+    
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
                         brand: {
-                            red: '#C8102E',      // KANJIHOLIC Red
-                            darkred: '#9B0B21',  // Hover Red
-                            bg: '#FDFBF7',       // Cream BG
+                            red: '#C8102E',
+                            darkred: '#9B0B21',
+                            bg: '#FDFBF7',
                             card: '#FFFFFF',
                             text: '#2C2C2C',
-                            accent: '#D4AF37'    // Gold/Accent
+                            accent: '#D4AF37'
                         }
                     }
                 }
@@ -28,16 +28,8 @@
         }
     </script>
     <style>
-        body {
-            background-color: #FDFBF7;
-            color: #2C2C2C;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        }
-        .tab-active {
-            border-bottom: 3px solid #C8102E;
-            color: #C8102E;
-            font-weight: bold;
-        }
+        body { background-color: #FDFBF7; color: #2C2C2C; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+        .tab-active { border-bottom: 3px solid #C8102E; color: #C8102E; font-weight: bold; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between">
@@ -46,7 +38,6 @@
     <header class="bg-brand-red text-white shadow-md sticky top-0 z-50">
         <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
             <div class="flex items-center space-x-3">
-                <!-- 更新されたロゴファイル名 -->
                 <img src="./KANJIHOLICRAVEN_logo.png" alt="KANJIHOLIC Logo" class="w-10 h-10 rounded-full border-2 border-white object-cover shadow-sm" onerror="this.src='https://via.placeholder.com/40?text=KH'">
                 <div>
                     <h1 class="text-xl font-bold tracking-wider leading-none">MOSHIHOLIC</h1>
@@ -54,10 +45,23 @@
                 </div>
             </div>
             
-            <!-- Quick Actions -->
+            <!-- Auth & Quick Actions -->
             <div class="flex items-center space-x-2">
+                <!-- Auth Button -->
+                <div id="authContainer">
+                    <button id="loginBtn" onclick="loginWithGoogle()" class="text-xs bg-white text-brand-red font-bold px-3 py-1.5 rounded-lg shadow hover:bg-gray-100 transition flex items-center gap-1.5">
+                        <i class="fa-brands fa-google"></i> ログイン
+                    </button>
+                    <div id="userProfile" class="hidden flex items-center gap-2">
+                        <img id="userAvatar" src="" class="w-7 h-7 rounded-full border border-white">
+                        <button onclick="logoutGoogle()" class="text-xs bg-black/20 hover:bg-black/30 text-white px-2 py-1 rounded transition" title="ログアウト">
+                            <i class="fa-solid fa-right-from-bracket"></i>
+                        </button>
+                    </div>
+                </div>
+
                 <button onclick="exportJSON()" class="text-xs bg-white/10 hover:bg-white/20 text-white px-2.5 py-1.5 rounded transition flex items-center gap-1" title="データをバックアップ">
-                    <i class="fa-solid font-bold fa-download"></i> <span class="hidden sm:inline">バックアップ</span>
+                    <i class="fa-solid fa-download"></i> <span class="hidden sm:inline">バックアップ</span>
                 </button>
                 <label class="text-xs bg-white/10 hover:bg-white/20 text-white px-2.5 py-1.5 rounded transition cursor-pointer flex items-center gap-1" title="データを復元">
                     <i class="fa-solid fa-upload"></i> <span class="hidden sm:inline">復元</span>
@@ -83,6 +87,11 @@
             </button>
         </div>
 
+        <!-- Status Banner -->
+        <div id="syncStatus" class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 flex items-center justify-between">
+            <span><i class="fa-solid fa-circle-info mr-1"></i> 現在はブラウザのローカル保存モードです。Googleログインすると端末間でデータが自動同期されます。</span>
+        </div>
+
         <!-- TAB 1: INPUT FORM -->
         <section id="view-input" class="space-y-6">
             <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
@@ -90,7 +99,6 @@
                     <i class="fa-solid fa-file-signature"></i> 模試結果の記録
                 </h2>
                 
-                <!-- Basic Meta Info -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                     <div>
                         <label class="block text-xs font-bold text-gray-600 mb-1">受検級</label>
@@ -109,18 +117,14 @@
                     </div>
                 </div>
 
-                <!-- Section Scores Input (Dynamic) -->
                 <div class="mb-6">
                     <h3 class="text-sm font-bold text-gray-700 mb-3 flex justify-between items-center">
                         <span>大問別得点</span>
                         <span id="scoreSummary" class="text-brand-red text-base font-extrabold">合計: 0 / 200 点 (0%)</span>
                     </h3>
-                    <div id="sectionInputsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <!-- JS Dynamic Generation -->
-                    </div>
+                    <div id="sectionInputsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
                 </div>
 
-                <!-- Wrong Answers Input Section -->
                 <div class="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
                     <div class="flex justify-between items-center mb-3">
                         <h3 class="text-sm font-bold text-gray-700 flex items-center gap-1">
@@ -130,27 +134,22 @@
                             <i class="fa-solid fa-plus"></i> 問題を追加
                         </button>
                     </div>
-                    
-                    <div id="errorRowsContainer" class="space-y-3">
-                        <!-- JS Dynamic Error Rows -->
-                    </div>
+                    <div id="errorRowsContainer" class="space-y-3"></div>
                 </div>
 
-                <!-- Submit Button -->
                 <button onclick="saveExamRecord()" class="w-full bg-brand-red hover:bg-brand-darkred text-white font-bold py-3 px-4 rounded-xl shadow-md transition duration-200 flex items-center justify-center gap-2">
                     <i class="fa-solid fa-floppy-disk"></i> この模試結果を保存する
                 </button>
             </div>
         </section>
 
-        <!-- TAB 2: HISTORY & ANALYTICS -->
+        <!-- TAB 2: HISTORY -->
         <section id="view-history" class="hidden space-y-6">
             <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                 <h2 class="text-lg font-bold text-brand-red mb-4 flex items-center justify-between border-b pb-2">
                     <span><i class="fa-solid fa-clock-rotate-left"></i> 模試結果一覧</span>
                     <span id="recordCount" class="text-xs font-normal text-gray-500">全 0 件</span>
                 </h2>
-
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
@@ -163,15 +162,13 @@
                                 <th class="p-3 text-center">操作</th>
                             </tr>
                         </thead>
-                        <tbody id="historyTableBody" class="text-sm divide-y">
-                            <!-- JS Dynamic Table Content -->
-                        </tbody>
+                        <tbody id="historyTableBody" class="text-sm divide-y"></tbody>
                     </table>
                 </div>
             </div>
         </section>
 
-        <!-- TAB 3: ERROR NOTE & ANKI EXPORT -->
+        <!-- TAB 3: ERROR NOTE -->
         <section id="view-errors" class="hidden space-y-6">
             <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4 mb-4">
@@ -186,7 +183,6 @@
                     </button>
                 </div>
 
-                <!-- Filters -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 bg-gray-50 p-3 rounded-lg border border-gray-200">
                     <div>
                         <label class="block text-xs font-bold text-gray-600 mb-1">級絞り込み</label>
@@ -204,10 +200,7 @@
                     </div>
                 </div>
 
-                <!-- Errors List Grid -->
-                <div id="errorCardsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- JS Dynamic Error Cards -->
-                </div>
+                <div id="errorCardsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
             </div>
         </section>
 
@@ -218,9 +211,104 @@
         <p>&copy; MOSHIHOLIC / KANJIHOLIC Project</p>
     </footer>
 
-    <!-- JavaScript Application Logic -->
+    <!-- Firebase SDK (v10 modular) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // ★★★ Firebaseの設定情報をここに貼り付けてください ★★★
+  const firebaseConfig = {
+    apiKey: "AIzaSyBHOsJw7Y6ID_VBuzBCOTHBhpjlYmhUYMM",
+    authDomain: "moshiholic-5202f.firebaseapp.com",
+    projectId: "moshiholic-5202f",
+    storageBucket: "moshiholic-5202f.firebasestorage.app",
+    messagingSenderId: "538913867255",
+    appId: "1:538913867255:web:bb744b68a0fe2c73931af2"
+  };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        let currentUser = null;
+        let unsubscribeFirestore = null;
+
+        // Global functions for Auth
+        window.loginWithGoogle = async () => {
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (err) {
+                alert("ログインに失敗しました: " + err.message);
+            }
+        };
+
+        window.logoutGoogle = async () => {
+            if (confirm("ログアウトしますか？")) {
+                await signOut(auth);
+            }
+        };
+
+        // Auth State Observer
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            const loginBtn = document.getElementById('loginBtn');
+            const userProfile = document.getElementById('userProfile');
+            const userAvatar = document.getElementById('userAvatar');
+            const syncStatus = document.getElementById('syncStatus');
+
+            if (user) {
+                loginBtn.classList.add('hidden');
+                userProfile.classList.remove('hidden');
+                userAvatar.src = user.photoURL || 'https://via.placeholder.com/30';
+                syncStatus.className = "mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-xs text-green-800 flex items-center justify-between";
+                syncStatus.innerHTML = `<span><i class="fa-solid fa-cloud-check mr-1"></i> Googleログイン中 (${user.displayName})。クラウドとリアルタイム同期しています。</span>`;
+
+                // Subscribe to Cloud Firestore
+                const userDocRef = doc(db, "users", user.uid);
+                unsubscribeFirestore = onSnapshot(userDocRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        window.records = docSnap.data().records || [];
+                    } else {
+                        // 初回ログイン時、ローカルデータをクラウドへ移行
+                        syncToCloud();
+                    }
+                    window.refreshAllViews();
+                });
+
+            } else {
+                if (unsubscribeFirestore) unsubscribeFirestore();
+                loginBtn.classList.remove('hidden');
+                userProfile.classList.add('hidden');
+                syncStatus.className = "mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 flex items-center justify-between";
+                syncStatus.innerHTML = `<span><i class="fa-solid fa-circle-info mr-1"></i> 現在はブラウザのローカル保存モードです。Googleログインすると端末間でデータが自動同期されます。</span>`;
+
+                // Fallback to LocalStorage
+                window.records = JSON.parse(localStorage.getItem('moshiholic_records')) || [];
+                window.refreshAllViews();
+            }
+        });
+
+        // Save Record Handler (Local & Cloud)
+        window.saveData = async () => {
+            if (currentUser) {
+                await syncToCloud();
+            } else {
+                localStorage.setItem('moshiholic_records', JSON.stringify(window.records));
+            }
+        };
+
+        async function syncToCloud() {
+            if (!currentUser) return;
+            const userDocRef = doc(db, "users", currentUser.uid);
+            await setDoc(userDocRef, { records: window.records, updatedAt: new Date() }, { merge: true });
+        }
+    </script>
+
+    <!-- App Logic -->
     <script>
-        // Exam Specifications
         const EXAM_SPECS = {
             "1": [
                 { id: 1, name: "（一）読み", max: 30 },
@@ -247,19 +335,20 @@
             ]
         };
 
-        // State Management
-        let records = JSON.parse(localStorage.getItem('moshiholic_records')) || [];
+        window.records = JSON.parse(localStorage.getItem('moshiholic_records')) || [];
 
-        // Initialize App
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('examDate').valueAsDate = new Date();
             renderScoreInputs();
             updateFilterSectionOptions();
-            renderHistoryTable();
-            renderErrorList();
+            refreshAllViews();
         });
 
-        // Tab Switching
+        window.refreshAllViews = () => {
+            renderHistoryTable();
+            renderErrorList();
+        };
+
         function switchTab(tabName) {
             ['input', 'history', 'errors'].forEach(t => {
                 document.getElementById(`view-${t}`).classList.add('hidden');
@@ -279,7 +368,6 @@
             }
         }
 
-        // Render Score Inputs based on Grade Selection
         function renderScoreInputs() {
             const grade = document.getElementById('examGrade').value;
             const container = document.getElementById('sectionInputsContainer');
@@ -296,13 +384,11 @@
                 container.appendChild(div);
             });
 
-            // Reset Error Rows Section Options
             document.getElementById('errorRowsContainer').innerHTML = '';
             addErrorRow();
             calculateTotal();
         }
 
-        // Calculate Total Score Dynamically
         function calculateTotal() {
             const inputs = document.querySelectorAll('.score-input');
             let total = 0;
@@ -314,7 +400,6 @@
             document.getElementById('scoreSummary').innerText = `合計: ${total} / 200 点 (${pct}%)`;
         }
 
-        // Add Error Question Row
         function addErrorRow() {
             const grade = document.getElementById('examGrade').value;
             const container = document.getElementById('errorRowsContainer');
@@ -352,8 +437,7 @@
             if (row) row.remove();
         }
 
-        // Save Exam Record
-        function saveExamRecord() {
+        async function saveExamRecord() {
             const date = document.getElementById('examDate').value;
             const title = document.getElementById('examTitle').value.trim();
             const grade = document.getElementById('examGrade').value;
@@ -363,7 +447,6 @@
                 return;
             }
 
-            // Gather Scores
             const scores = {};
             let totalScore = 0;
             document.querySelectorAll('.score-input').forEach(input => {
@@ -373,7 +456,6 @@
                 totalScore += score;
             });
 
-            // Gather Errors
             const errors = [];
             document.querySelectorAll('#errorRowsContainer > div').forEach(row => {
                 const secId = row.querySelector('.err-sec').value;
@@ -396,32 +478,26 @@
                 errors
             };
 
-            records.unshift(newRecord);
-            saveToStorage();
+            window.records.unshift(newRecord);
+            await window.saveData();
 
             alert('模試結果を保存しました！');
-            // Reset Form
             document.getElementById('examTitle').value = '';
             renderScoreInputs();
+            refreshAllViews();
         }
 
-        // Save to LocalStorage
-        function saveToStorage() {
-            localStorage.setItem('moshiholic_records', JSON.stringify(records));
-        }
-
-        // Render History Table
         function renderHistoryTable() {
             const tbody = document.getElementById('historyTableBody');
             tbody.innerHTML = '';
-            document.getElementById('recordCount').innerText = `全 ${records.length} 件`;
+            document.getElementById('recordCount').innerText = `全 ${window.records.length} 件`;
 
-            if (records.length === 0) {
+            if (window.records.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400 text-xs">登録された模試結果はありません。</td></tr>`;
                 return;
             }
 
-            records.forEach(rec => {
+            window.records.forEach(rec => {
                 const isPass = rec.totalScore >= 160;
                 const gradeLabel = rec.grade === '1' ? '1級' : '準1級';
 
@@ -441,28 +517,20 @@
             });
         }
 
-        function deleteRecord(id) {
+        async function deleteRecord(id) {
             if (confirm('この記録を削除してもよろしいですか？')) {
-                records = records.filter(r => r.id !== id);
-                saveToStorage();
-                renderHistoryTable();
+                window.records = window.records.filter(r => r.id !== id);
+                await window.saveData();
+                refreshAllViews();
             }
         }
 
-        // Update Filter Options in Error Tab
         function updateFilterSectionOptions() {
             const gradeFilter = document.getElementById('filterGrade').value;
             const secSelect = document.getElementById('filterSection');
             secSelect.innerHTML = '<option value="all">すべての分野</option>';
 
-            let sections = [];
-            if (gradeFilter === 'all') {
-                // Combine names uniquely
-                sections = [...EXAM_SPECS["1"], ...EXAM_SPECS["pre1"]];
-            } else {
-                sections = EXAM_SPECS[gradeFilter];
-            }
-
+            let sections = (gradeFilter === 'all') ? [...EXAM_SPECS["1"], ...EXAM_SPECS["pre1"]] : EXAM_SPECS[gradeFilter];
             const addedNames = new Set();
             sections.forEach(s => {
                 if (!addedNames.has(s.name)) {
@@ -475,7 +543,6 @@
             });
         }
 
-        // Render Error List
         function renderErrorList() {
             const container = document.getElementById('errorCardsContainer');
             container.innerHTML = '';
@@ -484,7 +551,7 @@
             const secFilter = document.getElementById('filterSection').value;
 
             let allErrors = [];
-            records.forEach(rec => {
+            window.records.forEach(rec => {
                 if (gradeFilter !== 'all' && rec.grade !== gradeFilter) return;
 
                 const spec = EXAM_SPECS[rec.grade];
@@ -533,13 +600,12 @@
             });
         }
 
-        // Export Anki CSV
         function exportAnkiCSV() {
-            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // UTF-8 BOM
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
             csvContent += "問題,正解,分野・模試情報,メモ\n";
 
             let count = 0;
-            records.forEach(rec => {
+            window.records.forEach(rec => {
                 const spec = EXAM_SPECS[rec.grade];
                 rec.errors.forEach(err => {
                     const secInfo = spec.find(s => s.id === err.secId);
@@ -570,9 +636,8 @@
             document.body.removeChild(link);
         }
 
-        // Export All Data (JSON Backup)
         function exportJSON() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(records, null, 2));
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(window.records, null, 2));
             const downloadAnchor = document.createElement('a');
             downloadAnchor.setAttribute("href", dataStr);
             downloadAnchor.setAttribute("download", `moshiholic_backup_${new Date().toISOString().slice(0,10)}.json`);
@@ -581,18 +646,16 @@
             downloadAnchor.remove();
         }
 
-        // Import JSON Backup
         function importJSON(event) {
             const fileReader = new FileReader();
-            fileReader.onload = function( e ) {
+            fileReader.onload = async function( e ) {
                 try {
                     const importedRecords = JSON.parse(e.target.result);
                     if (Array.isArray(importedRecords)) {
                         if (confirm('現在のデータを上書きして復元しますか？')) {
-                            records = importedRecords;
-                            saveToStorage();
-                            renderHistoryTable();
-                            renderErrorList();
+                            window.records = importedRecords;
+                            await window.saveData();
+                            refreshAllViews();
                             alert('データの復元が完了しました。');
                         }
                     } else {
@@ -605,14 +668,9 @@
             fileReader.readAsText(event.target.files[0]);
         }
 
-        // Utility: Escape HTML
         function escapeHtml(str) {
             if (!str) return '';
-            return str.replace(/&/g, "&amp;")
-                      .replace(/</g, "&lt;")
-                      .replace(/>/g, "&gt;")
-                      .replace(/"/g, "&quot;")
-                      .replace(/'/g, "&#039;");
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
     </script>
 </body>
