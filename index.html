@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MOSHIHOLIC - 漢検模試成績管理＆誤答ノート</title>
 
-    <!-- iOS ホーム画面用アイコン（デフォルト参照） -->
-    <link rel="apple-touch-icon" id="appleTouchIcon" href="./KANJIHOLICRAVEN_logo（文字なし）.png">
-    
+    <!-- PWA / Web Clip Icon (iPhoneホーム画面用) -->
+    <link rel="apple-touch-icon" id="appleTouchIcon" href="">
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome -->
@@ -24,6 +24,7 @@
                             red: '#C8102E',
                             darkred: '#9B0B21',
                             blue: '#1E40AF',
+                            darkblue: '#1E3A8A',
                             bg: '#FDFBF7',
                             card: '#FFFFFF',
                             text: '#2C2C2C',
@@ -38,19 +39,18 @@
         body { background-color: #FDFBF7; color: #2C2C2C; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
         .tab-active { border-bottom: 3px solid #C8102E; color: #C8102E; font-weight: bold; }
         
-        /* 級選択セレクトボックスの動的スタイリング */
-        .grade-select-1 {
-            background-color: #FEF2F2;
-            color: #C8102E;
-            border-color: #FECACA;
-            font-weight: bold;
-        }
-        .grade-select-pre1 {
-            background-color: #EFF6FF;
-            color: #1E40AF;
-            border-color: #BFDBFE;
-            font-weight: bold;
-        }
+        /* 1級・準1級 動的スタイルクラス */
+        .grade-select-1 { background-color: #FEF2F2; color: #C8102E; border-color: #FCA5A5; font-weight: bold; }
+        .grade-select-pre1 { background-color: #EFF6FF; color: #1E40AF; border-color: #93C5FD; font-weight: bold; }
+
+        .btn-grade-1 { background-color: #C8102E; }
+        .btn-grade-1:hover { background-color: #9B0B21; }
+
+        .btn-grade-pre1 { background-color: #1E40AF; }
+        .btn-grade-pre1:hover { background-color: #1E3A8A; }
+
+        .text-grade-1 { color: #C8102E; }
+        .text-grade-pre1 { color: #1E40AF; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between">
@@ -59,7 +59,7 @@
     <header class="bg-brand-red text-white shadow-md sticky top-0 z-50">
         <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
             <div class="flex items-center space-x-3">
-                <img src="./KANJIHOLICRAVEN_logo.png" alt="KANJIHOLIC Logo" class="w-10 h-10 rounded-full border-2 border-white object-cover shadow-sm" onerror="this.src='https://via.placeholder.com/40?text=KH'">
+                <img src="./KANJIHOLICRAVEN_logo（文字なし）.png" alt="KANJIHOLIC Logo" class="w-10 h-10 rounded-full border-2 border-white object-cover shadow-sm bg-[#FDFBF7]" onerror="this.src='./KANJIHOLICRAVEN_logo.png'">
                 <div>
                     <h1 class="text-xl font-bold tracking-wider leading-none">MOSHIHOLIC</h1>
                     <p class="text-xs text-red-100 mt-0.5">漢検1級・準1級 模試成績管理</p>
@@ -129,7 +129,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                     <div>
                         <label class="block text-xs font-bold text-gray-600 mb-1">受検級</label>
-                        <select id="examGrade" onchange="onGradeChange()" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-brand-red focus:outline-none transition">
+                        <select id="examGrade" onchange="renderScoreInputs()" class="w-full p-2.5 border rounded-lg focus:outline-none transition-colors">
                             <option value="1">1級</option>
                             <option value="pre1">準1級</option>
                         </select>
@@ -147,7 +147,7 @@
                 <div class="mb-6">
                     <h3 class="text-sm font-bold text-gray-700 mb-3 flex justify-between items-center">
                         <span>大問別得点</span>
-                        <span id="scoreSummary" class="text-brand-red text-base font-extrabold">合計: 0 / 200 点 (0%)</span>
+                        <span id="scoreSummary" class="text-brand-red text-base font-extrabold transition-colors">合計: 0 / 200 点 (0%)</span>
                     </h3>
                     <div id="sectionInputsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
                 </div>
@@ -155,16 +155,16 @@
                 <div class="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
                     <div class="flex justify-between items-center mb-3">
                         <h3 class="text-sm font-bold text-gray-700 flex items-center gap-1">
-                            <i class="fa-solid fa-circle-exclamation text-brand-red"></i> 誤答問題の登録
+                            <i class="fa-solid fa-circle-exclamation text-brand-red" id="errorHeaderIcon"></i> 誤答問題の登録
                         </h3>
-                        <button onclick="addErrorRow()" class="text-xs bg-brand-red hover:bg-brand-darkred text-white px-3 py-1.5 rounded-lg transition flex items-center gap-1 shadow-sm">
+                        <button id="addErrorRowBtn" onclick="addErrorRow()" class="text-xs btn-grade-1 text-white px-3 py-1.5 rounded-lg transition flex items-center gap-1 shadow-sm">
                             <i class="fa-solid fa-plus"></i> 問題を追加
                         </button>
                     </div>
                     <div id="errorRowsContainer" class="space-y-3"></div>
                 </div>
 
-                <button id="saveBtn" onclick="saveExamRecord()" class="w-full bg-brand-red hover:bg-brand-darkred text-white font-bold py-3 px-4 rounded-xl shadow-md transition duration-200 flex items-center justify-center gap-2">
+                <button id="saveBtn" onclick="saveExamRecord()" class="w-full btn-grade-1 text-white font-bold py-3 px-4 rounded-xl shadow-md transition duration-200 flex items-center justify-center gap-2">
                     <i class="fa-solid fa-floppy-disk"></i> <span id="saveBtnText">この模試結果を保存する</span>
                 </button>
             </div>
@@ -273,7 +273,7 @@
             </div>
         </section>
 
-        <!-- TAB 3: ERROR NOTE (単語帳フラッシュカード化 & モーダル統合フィルター) -->
+        <!-- TAB 3: ERROR NOTE (マルチ選択モーダル対応単語帳) -->
         <section id="view-errors" class="hidden space-y-6">
             <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4 mb-4">
@@ -288,17 +288,14 @@
                     </button>
                 </div>
 
-                <!-- フィルター起動バー -->
-                <div class="mb-6 bg-gray-50 p-4 rounded-xl border border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-filter text-brand-red"></i>
-                        <span class="text-xs font-bold text-gray-700">絞り込み状態:</span>
-                        <span id="filterStatusBadge" class="text-xs bg-red-100 text-brand-red font-bold px-2.5 py-1 rounded-full">
-                            全 19 分野を表示中
-                        </span>
+                <!-- フィルター起動ボタン ＆ ステータス表示 -->
+                <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3 mb-6">
+                    <div class="flex items-center gap-2 text-xs">
+                        <span class="font-bold text-gray-700"><i class="fa-solid fa-filter text-brand-red mr-1"></i> 絞り込み状況:</span>
+                        <span id="filterStatusBadge" class="bg-white px-2.5 py-1 rounded border border-gray-200 font-bold text-gray-800">全 19 分野を表示中</span>
                     </div>
-                    <button onclick="openFilterModal()" class="bg-white border border-gray-300 hover:bg-gray-100 text-gray-800 text-xs font-bold px-4 py-2 rounded-lg shadow-sm transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-sliders text-brand-red"></i> 級・分野を選択する
+                    <button onclick="openFilterModal()" class="text-xs bg-brand-red hover:bg-brand-darkred text-white font-bold px-4 py-2 rounded-lg shadow-sm transition flex items-center gap-1.5 w-full sm:w-auto justify-center">
+                        <i class="fa-solid fa-sliders"></i> 級・分野を選択する
                     </button>
                 </div>
 
@@ -308,60 +305,58 @@
 
     </main>
 
-    <!-- MODAL: ERROR NOTE FILTER (級・分野チェックボックス) -->
+    <!-- MODAL: FILTER MULTI-SELECT -->
     <div id="filterModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
-        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative my-8 max-h-[90vh] flex flex-col">
+        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative my-8 max-h-[90vh] overflow-y-auto">
             <button onclick="closeFilterModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl font-bold w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
                 &times;
             </button>
 
             <div class="border-b pb-3 mb-4">
                 <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-                    <i class="fa-solid fa-sliders text-brand-red"></i> 表示する級・分野を選択
+                    <i class="fa-solid fa-sliders text-brand-red"></i> 表示する級・分野の選択
                 </h2>
-                <p class="text-xs text-gray-500 mt-1">チェックを入れた分野の誤答カードを表示します。</p>
+                <p class="text-xs text-gray-500 mt-0.5">チェックを入れた分野の誤答カードを表示します。</p>
             </div>
 
-            <!-- 一括選択/解除アクションボタン -->
-            <div class="flex flex-wrap items-center gap-2 mb-4 bg-gray-50 p-2.5 rounded-lg border border-gray-200 text-xs">
-                <span class="font-bold text-gray-600 mr-1">一括操作:</span>
-                <button onclick="selectAllFilters('1')" class="bg-red-50 hover:bg-red-100 text-brand-red border border-red-200 font-bold px-3 py-1.5 rounded transition">
-                    1級すべて
+            <!-- 迅速操作ボタン -->
+            <div class="flex flex-wrap gap-2 mb-4 bg-gray-50 p-2.5 rounded-lg border border-gray-200 text-xs">
+                <button onclick="selectAllFilters('1')" class="bg-red-100 hover:bg-red-200 text-brand-red font-bold px-3 py-1.5 rounded transition">
+                    1級すべて選択
                 </button>
-                <button onclick="selectAllFilters('pre1')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-bold px-3 py-1.5 rounded transition">
-                    準1級すべて
+                <button onclick="selectAllFilters('pre1')" class="bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold px-3 py-1.5 rounded transition">
+                    準1級すべて選択
                 </button>
                 <button onclick="selectAllFilters('all')" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold px-3 py-1.5 rounded transition">
                     全選択
                 </button>
-                <button onclick="selectAllFilters('none')" class="bg-white border border-gray-300 hover:bg-gray-100 text-gray-600 px-3 py-1.5 rounded transition">
+                <button onclick="selectAllFilters('none')" class="bg-gray-100 hover:bg-gray-200 text-gray-500 font-bold px-3 py-1.5 rounded transition">
                     全解除
                 </button>
             </div>
 
-            <!-- チェックボックスグリッドリスト -->
-            <div class="overflow-y-auto space-y-4 pr-1 flex-grow">
-                <!-- 1級 グループ -->
-                <div class="border border-red-100 rounded-xl p-3 bg-red-50/30">
-                    <h3 class="text-xs font-bold text-brand-red mb-2.5 pb-1 border-b border-red-200 flex items-center gap-1">
-                        <i class="fa-solid fa-bookmark"></i> 1級 大問 (全9問)
+            <!-- チェックボックス一覧エリア -->
+            <div class="space-y-4 text-xs">
+                <!-- 1級グループ -->
+                <div class="border border-red-100 bg-red-50/30 p-3 rounded-xl">
+                    <h3 class="font-bold text-brand-red mb-2.5 flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-brand-red"></span> 1級 (全9問)
                     </h3>
-                    <div id="checkboxesGrade1" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs"></div>
+                    <div id="filterListGrade1" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
                 </div>
 
-                <!-- 準1級 グループ -->
-                <div class="border border-blue-100 rounded-xl p-3 bg-blue-50/30">
-                    <h3 class="text-xs font-bold text-blue-700 mb-2.5 pb-1 border-b border-blue-200 flex items-center gap-1">
-                        <i class="fa-solid fa-bookmark"></i> 準1級 大問 (全10問)
+                <!-- 準1級グループ -->
+                <div class="border border-blue-100 bg-blue-50/30 p-3 rounded-xl">
+                    <h3 class="font-bold text-blue-700 mb-2.5 flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-blue-700"></span> 準1級 (全10問)
                     </h3>
-                    <div id="checkboxesGradePre1" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs"></div>
+                    <div id="filterListGradePre1" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
                 </div>
             </div>
 
-            <!-- フッター適用ボタン -->
-            <div class="flex justify-end gap-3 border-t pt-4 mt-4">
-                <button onclick="applyFilterModal()" class="bg-brand-red hover:bg-brand-darkred text-white text-xs font-bold px-6 py-2.5 rounded-xl shadow transition">
-                    絞り込みを適用する
+            <div class="flex justify-end gap-2 border-t pt-4 mt-6">
+                <button onclick="applyFiltersAndClose()" class="bg-brand-red hover:bg-brand-darkred text-white text-xs font-bold px-5 py-2.5 rounded-lg transition shadow">
+                    決定して表示する
                 </button>
             </div>
         </div>
@@ -432,6 +427,7 @@
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+        // ★★★ Firebaseの設定情報（保持されています） ★★★
         const firebaseConfig = {
             apiKey: "AIzaSyBHOsJw7Y6ID_VBuzBCOTHBhpjlYmhUYMM",
             authDomain: "moshiholic-5202f.firebaseapp.com",
@@ -542,65 +538,58 @@
             ]
         };
 
-        const ALL_FILTER_KEYS = [
-            ...EXAM_SPECS["1"].map(s => `1_${s.id}`),
-            ...EXAM_SPECS["pre1"].map(s => `pre1_${s.id}`)
-        ];
-
-        let selectedFilterKeys = new Set(ALL_FILTER_KEYS);
-
         window.records = JSON.parse(localStorage.getItem('moshiholic_records')) || [];
+        
+        // 19個の分野選択状態を管理（デフォルト全選択）
+        let selectedFilterKeys = new Set();
+
         let radarChartInstance = null;
         let summaryChart1Instance = null;
         let summaryChartPre1Instance = null;
 
         document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('examDate').valueAsDate = new Date();
-            updateGradeSelectStyle();
-            renderScoreInputs();
-            initFilterModalDOM();
-            refreshAllViews();
             generateAppleTouchIcon();
+            document.getElementById('examDate').valueAsDate = new Date();
+            initFilterState();
+            renderFilterCheckboxes();
+            renderScoreInputs();
+            refreshAllViews();
         });
 
-        // 透過PNG「KANJIHOLICRAVEN_logo（文字なし）.png」をクリーム色（#FDFBF7）の背景付きデータURL化してapple-touch-iconに適用
+        // iPhone ホーム画面用 Web Clip アイコンを動的生成（ロゴを大きく配置）
         function generateAppleTouchIcon() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 180;
+            canvas.height = 180;
+            const ctx = canvas.getContext('2d');
+
+            // 背景色: #FDFBF7 (クリーム色)
+            ctx.fillStyle = '#FDFBF7';
+            ctx.fillRect(0, 0, 180, 180);
+
             const img = new Image();
-            img.src = "./KANJIHOLICRAVEN_logo（文字なし）.png";
+            img.src = './KANJIHOLICRAVEN_logo（文字なし）.png';
             img.onload = () => {
-                const canvas = document.createElement('canvas');
-                canvas.width = 180;
-                canvas.height = 180;
-                const ctx = canvas.getContext('2d');
-
-                // 背景色（クリーム色）
-                ctx.fillStyle = '#FDFBF7';
-                ctx.fillRect(0, 0, 180, 180);
-
-                // 中央配置（余白あり）
-                const padding = 15;
-                ctx.drawImage(img, padding, padding, 180 - padding * 2, 180 - padding * 2);
-
-                const dataUrl = canvas.toDataURL('image/png');
-                const appleIconLink = document.getElementById('appleTouchIcon');
-                if (appleIconLink) {
-                    appleIconLink.href = dataUrl;
-                }
+                // ロゴを大きめに描画（余白を最小限に設定）
+                ctx.drawImage(img, 10, 10, 160, 160);
+                document.getElementById('appleTouchIcon').href = canvas.toDataURL('image/png');
+            };
+            img.onerror = () => {
+                // フォールバック
+                const fallbackImg = new Image();
+                fallbackImg.src = './KANJIHOLICRAVEN_logo.png';
+                fallbackImg.onload = () => {
+                    ctx.drawImage(fallbackImg, 10, 10, 160, 160);
+                    document.getElementById('appleTouchIcon').href = canvas.toDataURL('image/png');
+                };
             };
         }
 
-        function onGradeChange() {
-            updateGradeSelectStyle();
-            renderScoreInputs();
-        }
-
-        function updateGradeSelectStyle() {
-            const select = document.getElementById('examGrade');
-            if (select.value === '1') {
-                select.className = "w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-brand-red focus:outline-none transition grade-select-1";
-            } else {
-                select.className = "w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-brand-blue focus:outline-none transition grade-select-pre1";
-            }
+        // 初期フィルタ状態の作成（全19個のキーを登録）
+        function initFilterState() {
+            selectedFilterKeys.clear();
+            EXAM_SPECS["1"].forEach(s => selectedFilterKeys.add(`1-${s.id}`));
+            EXAM_SPECS["pre1"].forEach(s => selectedFilterKeys.add(`pre1-${s.id}`));
         }
 
         window.refreshAllViews = () => {
@@ -630,8 +619,33 @@
             }
         }
 
+        // 受検級選択時にフォーム内のテーマカラーを動的変更
+        function applyGradeTheme(grade) {
+            const gradeSelect = document.getElementById('examGrade');
+            const saveBtn = document.getElementById('saveBtn');
+            const addErrorBtn = document.getElementById('addErrorRowBtn');
+            const scoreSummary = document.getElementById('scoreSummary');
+            const errorHeaderIcon = document.getElementById('errorHeaderIcon');
+
+            if (grade === '1') {
+                gradeSelect.className = "w-full p-2.5 border rounded-lg focus:outline-none transition-colors grade-select-1";
+                saveBtn.className = "w-full btn-grade-1 text-white font-bold py-3 px-4 rounded-xl shadow-md transition duration-200 flex items-center justify-center gap-2";
+                addErrorBtn.className = "text-xs btn-grade-1 text-white px-3 py-1.5 rounded-lg transition flex items-center gap-1 shadow-sm";
+                scoreSummary.className = "text-brand-red text-base font-extrabold transition-colors";
+                errorHeaderIcon.className = "fa-solid fa-circle-exclamation text-brand-red";
+            } else {
+                gradeSelect.className = "w-full p-2.5 border rounded-lg focus:outline-none transition-colors grade-select-pre1";
+                saveBtn.className = "w-full btn-grade-pre1 text-white font-bold py-3 px-4 rounded-xl shadow-md transition duration-200 flex items-center justify-center gap-2";
+                addErrorBtn.className = "text-xs btn-grade-pre1 text-white px-3 py-1.5 rounded-lg transition flex items-center gap-1 shadow-sm";
+                scoreSummary.className = "text-blue-700 text-base font-extrabold transition-colors";
+                errorHeaderIcon.className = "fa-solid fa-circle-exclamation text-blue-700";
+            }
+        }
+
         function renderScoreInputs() {
             const grade = document.getElementById('examGrade').value;
+            applyGradeTheme(grade);
+
             const container = document.getElementById('sectionInputsContainer');
             container.innerHTML = '';
 
@@ -786,8 +800,6 @@
             document.getElementById('cancelEditBtn').classList.add('hidden');
             document.getElementById('examTitle').value = '';
             document.getElementById('examDate').valueAsDate = new Date();
-            document.getElementById('examGrade').value = '1';
-            updateGradeSelectStyle();
             renderScoreInputs();
         }
 
@@ -805,8 +817,6 @@
             document.getElementById('cancelEditBtn').classList.remove('hidden');
 
             document.getElementById('examGrade').value = rec.grade;
-            updateGradeSelectStyle();
-
             document.getElementById('examDate').value = rec.date;
             document.getElementById('examTitle').value = rec.title;
 
@@ -833,6 +843,7 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
+        // 累計成績サマリーのトグル処理
         function toggleSummaryChart(gradeKey) {
             const containerId = gradeKey === '1' ? 'summary1ChartContainer' : 'summaryPre1ChartContainer';
             const textId = gradeKey === '1' ? 'summary1ChartToggleText' : 'summaryPre1ChartToggleText';
@@ -849,6 +860,7 @@
             }
         }
 
+        // 累計成績サマリー＆全体分析レーダーチャートの計算・描画
         function renderCumulativeAnalytics() {
             ['1', 'pre1'].forEach(gradeKey => {
                 const gradeRecords = window.records.filter(r => r.grade === gradeKey);
@@ -984,7 +996,7 @@
                     <td class="p-3 text-xs text-gray-500 whitespace-nowrap" onclick="openDetailModal(${rec.id})">${rec.date}</td>
                     <td class="p-3" onclick="openDetailModal(${rec.id})"><span class="px-2 py-0.5 rounded text-xs font-bold ${rec.grade==='1'?'bg-red-100 text-brand-red':'bg-blue-100 text-blue-700'}">${gradeLabel}</span></td>
                     <td class="p-3 font-semibold text-gray-800" onclick="openDetailModal(${rec.id})">${escapeHtml(rec.title)}</td>
-                    <td class="p-3 font-extrabold ${isPass ? 'text-brand-red' : 'text-gray-700'}" onclick="openDetailModal(${rec.id})">${rec.totalScore} <span class="text-xs font-normal text-gray-400">/ 200</span></td>
+                    <td class="p-3 font-extrabold ${isPass ? (rec.grade==='1'?'text-brand-red':'text-blue-700') : 'text-gray-700'}" onclick="openDetailModal(${rec.id})">${rec.totalScore} <span class="text-xs font-normal text-gray-400">/ 200</span></td>
                     <td class="p-3 text-xs font-mono text-gray-500 max-w-xs truncate" title="${scoreString}" onclick="openDetailModal(${rec.id})">${scoreString}</td>
                     <td class="p-3" onclick="openDetailModal(${rec.id})"><span class="px-2 py-0.5 rounded text-xs font-bold ${isPass ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}">${isPass ? '合格圏内' : '目標まで' + (160 - rec.totalScore) + '点'}</span></td>
                     <td class="p-3 text-center whitespace-nowrap">
@@ -1126,41 +1138,64 @@
             }
         }
 
-        function initFilterModalDOM() {
-            const container1 = document.getElementById('checkboxesGrade1');
-            const containerPre1 = document.getElementById('checkboxesGradePre1');
-
+        // フィルターモーダルのチェックボックス生成
+        function renderFilterCheckboxes() {
+            const container1 = document.getElementById('filterListGrade1');
+            const containerPre1 = document.getElementById('filterListGradePre1');
             container1.innerHTML = '';
             containerPre1.innerHTML = '';
 
+            // 1級 (9問)
             EXAM_SPECS["1"].forEach(sec => {
-                const key = `1_${sec.id}`;
-                const lbl = document.createElement('label');
-                lbl.className = "flex items-center gap-2 p-1.5 hover:bg-red-100/50 rounded cursor-pointer select-none";
-                lbl.innerHTML = `
-                    <input type="checkbox" data-filter-key="${key}" class="filter-cb accent-brand-red w-4 h-4 rounded" checked>
-                    <span class="text-gray-800 font-medium">${sec.name}</span>
+                const key = `1-${sec.id}`;
+                const checked = selectedFilterKeys.has(key) ? 'checked' : '';
+                const label = document.createElement('label');
+                label.className = "flex items-center gap-2 bg-white p-2 rounded-lg border border-gray-200 hover:border-red-300 cursor-pointer transition";
+                label.innerHTML = `
+                    <input type="checkbox" value="${key}" ${checked} onchange="toggleFilterKey('${key}')" class="rounded text-brand-red focus:ring-brand-red">
+                    <span class="font-medium text-gray-700">${sec.name}</span>
                 `;
-                container1.appendChild(lbl);
+                container1.appendChild(label);
             });
 
+            // 準1級 (10問)
             EXAM_SPECS["pre1"].forEach(sec => {
-                const key = `pre1_${sec.id}`;
-                const lbl = document.createElement('label');
-                lbl.className = "flex items-center gap-2 p-1.5 hover:bg-blue-100/50 rounded cursor-pointer select-none";
-                lbl.innerHTML = `
-                    <input type="checkbox" data-filter-key="${key}" class="filter-cb accent-blue-700 w-4 h-4 rounded" checked>
-                    <span class="text-gray-800 font-medium">${sec.name}</span>
+                const key = `pre1-${sec.id}`;
+                const checked = selectedFilterKeys.has(key) ? 'checked' : '';
+                const label = document.createElement('label');
+                label.className = "flex items-center gap-2 bg-white p-2 rounded-lg border border-gray-200 hover:border-blue-300 cursor-pointer transition";
+                label.innerHTML = `
+                    <input type="checkbox" value="${key}" ${checked} onchange="toggleFilterKey('${key}')" class="rounded text-blue-600 focus:ring-blue-500">
+                    <span class="font-medium text-gray-700">${sec.name}</span>
                 `;
-                containerPre1.appendChild(lbl);
+                containerPre1.appendChild(label);
             });
         }
 
+        function toggleFilterKey(key) {
+            if (selectedFilterKeys.has(key)) {
+                selectedFilterKeys.delete(key);
+            } else {
+                selectedFilterKeys.add(key);
+            }
+        }
+
+        // フィルター一括操作
+        function selectAllFilters(type) {
+            if (type === '1') {
+                EXAM_SPECS["1"].forEach(s => selectedFilterKeys.add(`1-${s.id}`));
+            } else if (type === 'pre1') {
+                EXAM_SPECS["pre1"].forEach(s => selectedFilterKeys.add(`pre1-${s.id}`));
+            } else if (type === 'all') {
+                initFilterState();
+            } else if (type === 'none') {
+                selectedFilterKeys.clear();
+            }
+            renderFilterCheckboxes();
+        }
+
         function openFilterModal() {
-            document.querySelectorAll('.filter-cb').forEach(cb => {
-                const key = cb.dataset.filterKey;
-                cb.checked = selectedFilterKeys.has(key);
-            });
+            renderFilterCheckboxes();
             document.getElementById('filterModal').classList.remove('hidden');
         }
 
@@ -1168,58 +1203,37 @@
             document.getElementById('filterModal').classList.add('hidden');
         }
 
-        function selectAllFilters(type) {
-            document.querySelectorAll('.filter-cb').forEach(cb => {
-                const key = cb.dataset.filterKey;
-                if (type === 'all') {
-                    cb.checked = true;
-                } else if (type === 'none') {
-                    cb.checked = false;
-                } else if (type === '1') {
-                    if (key.startsWith('1_')) cb.checked = true;
-                } else if (type === 'pre1') {
-                    if (key.startsWith('pre1_')) cb.checked = true;
-                }
-            });
-        }
-
-        function applyFilterModal() {
-            selectedFilterKeys.clear();
-            document.querySelectorAll('.filter-cb:checked').forEach(cb => {
-                selectedFilterKeys.add(cb.dataset.filterKey);
-            });
-
+        function applyFiltersAndClose() {
             closeFilterModal();
-            updateFilterStatusBadge();
             renderErrorList();
         }
 
-        function updateFilterStatusBadge() {
-            const badge = document.getElementById('filterStatusBadge');
-            const total = ALL_FILTER_KEYS.length;
-            const count = selectedFilterKeys.size;
-
-            if (count === total) {
-                badge.className = "text-xs bg-red-100 text-brand-red font-bold px-2.5 py-1 rounded-full";
-                badge.innerText = `全 ${total} 分野を表示中`;
-            } else if (count === 0) {
-                badge.className = "text-xs bg-gray-200 text-gray-600 font-bold px-2.5 py-1 rounded-full";
-                badge.innerText = `選択なし (表示 0 件)`;
-            } else {
-                badge.className = "text-xs bg-amber-100 text-amber-800 font-bold px-2.5 py-1 rounded-full";
-                badge.innerText = `${count} / ${total} 分野を選択中`;
-            }
-        }
-
+        // 単語帳フラッシュカード化された誤答ノート描画（マルチ選択フィルター連動）
         function renderErrorList() {
             const container = document.getElementById('errorCardsContainer');
             container.innerHTML = '';
+
+            // バッジ更新
+            const totalKeys = 19;
+            const currentSelectedCount = selectedFilterKeys.size;
+            const badge = document.getElementById('filterStatusBadge');
+            
+            if (currentSelectedCount === totalKeys) {
+                badge.innerText = `全 ${totalKeys} 分野を表示中`;
+                badge.className = "bg-white px-2.5 py-1 rounded border border-gray-200 font-bold text-gray-800";
+            } else if (currentSelectedCount === 0) {
+                badge.innerText = `すべて非表示中 (0/19)`;
+                badge.className = "bg-red-50 px-2.5 py-1 rounded border border-red-200 font-bold text-brand-red";
+            } else {
+                badge.innerText = `${currentSelectedCount} / ${totalKeys} 分野を表示中`;
+                badge.className = "bg-amber-50 px-2.5 py-1 rounded border border-amber-200 font-bold text-amber-800";
+            }
 
             let allErrors = [];
             window.records.forEach(rec => {
                 const spec = EXAM_SPECS[rec.grade];
                 rec.errors.forEach(err => {
-                    const filterKey = `${rec.grade}_${err.secId}`;
+                    const filterKey = `${rec.grade}-${err.secId}`;
                     if (!selectedFilterKeys.has(filterKey)) return;
 
                     const secInfo = spec.find(s => s.id === err.secId);
@@ -1254,6 +1268,7 @@
                             <span class="text-xs text-gray-400">${err.examTitle}</span>
                         </div>
                         
+                        <!-- 表面: 問題のみ -->
                         <div id="card-front-${idx}" class="my-2">
                             <div class="text-xs text-gray-400 font-semibold mb-1 flex items-center justify-between">
                                 <span><i class="fa-solid fa-circle-question mr-1 text-amber-500"></i>問題</span>
@@ -1262,6 +1277,7 @@
                             <div class="text-lg font-bold text-gray-800 py-2">${escapeHtml(err.question || '未入力')}</div>
                         </div>
 
+                        <!-- 裏面: 解答 & メモ (初期非表示) -->
                         <div id="card-back-${idx}" class="hidden my-2 pt-2 border-t border-dashed border-gray-200">
                             <div class="mb-2">
                                 <div class="text-xs text-gray-400 font-semibold mb-0.5"><i class="fa-solid fa-circle-check mr-1 text-emerald-500"></i>正解</div>
@@ -1290,9 +1306,6 @@
             window.records.forEach(rec => {
                 const spec = EXAM_SPECS[rec.grade];
                 rec.errors.forEach(err => {
-                    const filterKey = `${rec.grade}_${err.secId}`;
-                    if (!selectedFilterKeys.has(filterKey)) return;
-
                     const secInfo = spec.find(s => s.id === err.secId);
                     const secName = secInfo ? secInfo.name : '';
                     const info = `[${rec.grade==='1'?'1級':'準1級'}] ${secName} (${rec.title})`;
