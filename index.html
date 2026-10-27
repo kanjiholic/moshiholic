@@ -155,7 +155,7 @@
         <!-- TAB 2: HISTORY & SUMMARY ANALYTICS -->
         <section id="view-history" class="hidden space-y-6">
             
-            <!-- Cumulative Stats Section (新規追加: 累計成績サマリー) -->
+            <!-- Cumulative Stats Section (累計成績サマリー) -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- 1級 累計カード -->
                 <div class="bg-white p-5 rounded-xl shadow-sm border border-red-200 flex flex-col justify-between">
@@ -180,8 +180,15 @@
                                 <div id="summary1Fail" class="text-lg font-bold text-gray-500">0 回</div>
                             </div>
                         </div>
-                        <div class="w-full h-60 mt-2">
-                            <canvas id="summary1ChartCanvas"></canvas>
+
+                        <!-- トグルボタン＆チャートエリア -->
+                        <div class="mt-3">
+                            <button onclick="toggleSummaryChart('1')" class="w-full text-xs font-bold text-brand-red bg-red-50 hover:bg-red-100 border border-red-200 py-2 px-3 rounded-lg transition flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-chart-pie"></i> <span id="summary1ChartToggleText">レーダーチャートを表示する</span>
+                            </button>
+                            <div id="summary1ChartContainer" class="hidden w-full h-60 mt-3 pt-2 border-t border-gray-100">
+                                <canvas id="summary1ChartCanvas"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -209,8 +216,15 @@
                                 <div id="summaryPre1Fail" class="text-lg font-bold text-gray-500">0 回</div>
                             </div>
                         </div>
-                        <div class="w-full h-60 mt-2">
-                            <canvas id="summaryPre1ChartCanvas"></canvas>
+
+                        <!-- トグルボタン＆チャートエリア -->
+                        <div class="mt-3">
+                            <button onclick="toggleSummaryChart('pre1')" class="w-full text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 py-2 px-3 rounded-lg transition flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-chart-pie"></i> <span id="summaryPre1ChartToggleText">レーダーチャートを表示する</span>
+                            </button>
+                            <div id="summaryPre1ChartContainer" class="hidden w-full h-60 mt-3 pt-2 border-t border-gray-100">
+                                <canvas id="summaryPre1ChartCanvas"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -241,15 +255,15 @@
             </div>
         </section>
 
-        <!-- TAB 3: ERROR NOTE -->
+        <!-- TAB 3: ERROR NOTE (単語帳フラッシュカード化) -->
         <section id="view-errors" class="hidden space-y-6">
             <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4 mb-4">
                     <div>
                         <h2 class="text-lg font-bold text-brand-red flex items-center gap-2">
-                            <i class="fa-solid fa-book-open"></i> 誤答データベース
+                            <i class="fa-solid fa-book-open"></i> 誤答データベース (単語帳モード)
                         </h2>
-                        <p class="text-xs text-gray-500 mt-1">蓄積された間違えた問題を絞り込み・閲覧・Anki用に書き出しできます。</p>
+                        <p class="text-xs text-gray-500 mt-1">カードをクリック/タップすると正解・メモが表示されます。</p>
                     </div>
                     <button onclick="exportAnkiCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow transition flex items-center justify-center gap-1.5">
                         <i class="fa-solid fa-file-csv"></i> Anki用CSVエクスポート
@@ -344,15 +358,15 @@
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // ★★★ Firebaseの設定情報をここに貼り付けてください ★★★
-  const firebaseConfig = {
-    apiKey: "AIzaSyBHOsJw7Y6ID_VBuzBCOTHBhpjlYmhUYMM",
-    authDomain: "moshiholic-5202f.firebaseapp.com",
-    projectId: "moshiholic-5202f",
-    storageBucket: "moshiholic-5202f.firebasestorage.app",
-    messagingSenderId: "538913867255",
-    appId: "1:538913867255:web:bb744b68a0fe2c73931af2"
-  };
+        // ★★★ Firebaseの設定情報（保持されています） ★★★
+        const firebaseConfig = {
+            apiKey: "AIzaSyBHOsJw7Y6ID_VBuzBCOTHBhpjlYmhUYMM",
+            authDomain: "moshiholic-5202f.firebaseapp.com",
+            projectId: "moshiholic-5202f",
+            storageBucket: "moshiholic-5202f.firebasestorage.app",
+            messagingSenderId: "538913867255",
+            appId: "1:538913867255:web:bb744b68a0fe2c73931af2"
+        };
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -694,6 +708,24 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
+        // 累計成績サマリーのトグル処理
+        function toggleSummaryChart(gradeKey) {
+            const containerId = gradeKey === '1' ? 'summary1ChartContainer' : 'summaryPre1ChartContainer';
+            const textId = gradeKey === '1' ? 'summary1ChartToggleText' : 'summaryPre1ChartToggleText';
+            const container = document.getElementById(containerId);
+            const textElem = document.getElementById(textId);
+
+            if (container.classList.contains('hidden')) {
+                container.classList.remove('hidden');
+                textElem.innerText = 'レーダーチャートを非表示にする';
+                // 表示時にグラフを再描画（レンダリング崩れ防止）
+                renderCumulativeAnalytics();
+            } else {
+                container.classList.add('hidden');
+                textElem.innerText = 'レーダーチャートを表示する';
+            }
+        }
+
         // 累計成績サマリー＆全体分析レーダーチャートの計算・描画
         function renderCumulativeAnalytics() {
             ['1', 'pre1'].forEach(gradeKey => {
@@ -710,6 +742,7 @@
                 const passElem = document.getElementById(gradeKey === '1' ? 'summary1Pass' : 'summaryPre1Pass');
                 const failElem = document.getElementById(gradeKey === '1' ? 'summary1Fail' : 'summaryPre1Fail');
                 const canvasId = gradeKey === '1' ? 'summary1ChartCanvas' : 'summaryPre1ChartCanvas';
+                const containerId = gradeKey === '1' ? 'summary1ChartContainer' : 'summaryPre1ChartContainer';
 
                 countElem.innerText = `受験数: ${count}回`;
 
@@ -718,7 +751,6 @@
                     passElem.innerText = `0 回`;
                     failElem.innerText = `0 回`;
 
-                    // チャートの破棄
                     if (gradeKey === '1' && summaryChart1Instance) { summaryChart1Instance.destroy(); summaryChart1Instance = null; }
                     if (gradeKey === 'pre1' && summaryChartPre1Instance) { summaryChartPre1Instance.destroy(); summaryChartPre1Instance = null; }
                     return;
@@ -743,7 +775,11 @@
                 passElem.innerText = `${passCount} 回`;
                 failElem.innerText = `${failCount} 回`;
 
-                // 大問ごとの平均点・平均得点率
+                // 非表示状態のときはChart描画を行わない（表示時に描画）
+                if (document.getElementById(containerId).classList.contains('hidden')) {
+                    return;
+                }
+
                 const labels = specs.map(s => s.name.replace(/（.）/, ''));
                 const rates = specs.map(s => {
                     const avgSecScore = sectionTotals[s.id] / count;
@@ -860,7 +896,6 @@
 
             document.getElementById('modalEditBtn').onclick = () => editRecord(rec.id);
 
-            // 明細グリッド描画
             const grid = document.getElementById('modalSectionGrid');
             grid.innerHTML = '';
             specs.forEach(s => {
@@ -874,7 +909,6 @@
                 grid.appendChild(div);
             });
 
-            // 誤答一覧描画
             const errList = document.getElementById('modalErrorList');
             errList.innerHTML = '';
             if (rec.errors && rec.errors.length > 0) {
@@ -897,9 +931,7 @@
                 errList.innerHTML = `<div class="text-xs text-gray-400 italic">登録された誤答問題はありません。</div>`;
             }
 
-            // 個別模試レーダーチャート描画（得点併記＆級別カラー対応）
             renderRadarChart(specs, rec.scores || {}, rec.grade);
-
             document.getElementById('detailModal').classList.remove('hidden');
         }
 
@@ -907,7 +939,6 @@
             document.getElementById('detailModal').classList.add('hidden');
         }
 
-        // 個別模試用レーダーチャート描画
         function renderRadarChart(specs, scores, grade) {
             const ctx = document.getElementById('radarChartCanvas').getContext('2d');
             const labels = specs.map(s => s.name.replace(/（.）/, ''));
@@ -992,6 +1023,7 @@
             });
         }
 
+        // 単語帳フラッシュカード化された誤答ノート描画
         function renderErrorList() {
             const container = document.getElementById('errorCardsContainer');
             container.innerHTML = '';
@@ -1025,28 +1057,49 @@
                 return;
             }
 
-            allErrors.forEach(err => {
+            allErrors.forEach((err, idx) => {
                 const card = document.createElement('div');
-                card.className = "bg-gray-50 p-4 rounded-xl border border-gray-200 shadow-sm relative flex flex-col justify-between";
+                card.className = "bg-white p-5 rounded-xl border border-gray-200 shadow-sm transition-all hover:shadow-md cursor-pointer relative flex flex-col justify-between min-h-[160px]";
+                card.onclick = () => toggleFlashcard(idx);
+
                 card.innerHTML = `
                     <div>
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-xs font-bold px-2 py-0.5 rounded ${err.grade==='1'?'bg-red-100 text-brand-red':'bg-blue-100 text-blue-700'}">${err.grade==='1'?'1級':'準1級'}・${err.secName}</span>
-                            <span class="text-xs text-gray-400">${err.examTitle} (${err.examDate})</span>
+                        <div class="flex items-center justify-between mb-3 border-b pb-2">
+                            <span class="text-xs font-bold px-2 py-0.5 rounded ${err.grade==='1'?'bg-red-100 text-brand-red':'bg-blue-100 text-blue-700'}">
+                                ${err.grade==='1'?'1級':'準1級'}・${err.secName}
+                            </span>
+                            <span class="text-xs text-gray-400">${err.examTitle}</span>
                         </div>
-                        <div class="mb-2">
-                            <div class="text-xs text-gray-500">問題</div>
-                            <div class="text-base font-bold text-gray-800">${escapeHtml(err.question || '未入力')}</div>
+                        
+                        <!-- 表面: 問題のみ -->
+                        <div id="card-front-${idx}" class="my-2">
+                            <div class="text-xs text-gray-400 font-semibold mb-1 flex items-center justify-between">
+                                <span><i class="fa-solid fa-circle-question mr-1 text-amber-500"></i>問題</span>
+                                <span class="text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200">タップで答えを表示</span>
+                            </div>
+                            <div class="text-lg font-bold text-gray-800 py-2">${escapeHtml(err.question || '未入力')}</div>
                         </div>
-                        <div class="mb-2">
-                            <div class="text-xs text-gray-500">正解</div>
-                            <div class="text-sm font-semibold text-brand-red">${escapeHtml(err.answer || '未入力')}</div>
+
+                        <!-- 裏面: 解答 & メモ (初期非表示) -->
+                        <div id="card-back-${idx}" class="hidden my-2 pt-2 border-t border-dashed border-gray-200">
+                            <div class="mb-2">
+                                <div class="text-xs text-gray-400 font-semibold mb-0.5"><i class="fa-solid fa-circle-check mr-1 text-emerald-500"></i>正解</div>
+                                <div class="text-base font-extrabold ${err.grade==='1'?'text-brand-red':'text-blue-700'}">${escapeHtml(err.answer || '未入力')}</div>
+                            </div>
+                            ${err.memo ? `<div class="text-xs bg-gray-50 p-2 rounded border border-gray-200 text-gray-600 mt-2"><i class="fa-regular fa-note-sticky text-amber-600 mr-1"></i>${escapeHtml(err.memo)}</div>` : ''}
                         </div>
-                        ${err.memo ? `<div class="text-xs bg-white p-2 rounded border border-gray-200 text-gray-600 mt-2"><i class="fa-regular fa-note-sticky text-brand-red mr-1"></i>${escapeHtml(err.memo)}</div>` : ''}
                     </div>
                 `;
                 container.appendChild(card);
             });
+        }
+
+        // フラッシュカードの開閉トグル
+        function toggleFlashcard(idx) {
+            const backElem = document.getElementById(`card-back-${idx}`);
+            if (backElem) {
+                backElem.classList.toggle('hidden');
+            }
         }
 
         function exportAnkiCSV() {
