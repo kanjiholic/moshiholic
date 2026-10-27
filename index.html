@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MOSHIHOLIC - 漢検模試成績管理＆誤答ノート</title>
+
+    <!-- iOS ホーム画面用アイコン（デフォルト参照） -->
+    <link rel="apple-touch-icon" id="appleTouchIcon" href="./KANJIHOLICRAVEN_logo（文字なし）.png">
+    
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome -->
@@ -33,6 +37,20 @@
     <style>
         body { background-color: #FDFBF7; color: #2C2C2C; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
         .tab-active { border-bottom: 3px solid #C8102E; color: #C8102E; font-weight: bold; }
+        
+        /* 級選択セレクトボックスの動的スタイリング */
+        .grade-select-1 {
+            background-color: #FEF2F2;
+            color: #C8102E;
+            border-color: #FECACA;
+            font-weight: bold;
+        }
+        .grade-select-pre1 {
+            background-color: #EFF6FF;
+            color: #1E40AF;
+            border-color: #BFDBFE;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between">
@@ -111,9 +129,9 @@
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                     <div>
                         <label class="block text-xs font-bold text-gray-600 mb-1">受検級</label>
-                        <select id="examGrade" onchange="renderScoreInputs()" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-red focus:outline-none">
-                            <option value="1">1級 (全9問 / 200点満点)</option>
-                            <option value="pre1">準1級 (全10問 / 200点満点)</option>
+                        <select id="examGrade" onchange="onGradeChange()" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-brand-red focus:outline-none transition">
+                            <option value="1">1級</option>
+                            <option value="pre1">準1級</option>
                         </select>
                     </div>
                     <div>
@@ -414,7 +432,6 @@
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // ★★★ Firebaseの設定情報（保持されています） ★★★
         const firebaseConfig = {
             apiKey: "AIzaSyBHOsJw7Y6ID_VBuzBCOTHBhpjlYmhUYMM",
             authDomain: "moshiholic-5202f.firebaseapp.com",
@@ -525,13 +542,11 @@
             ]
         };
 
-        // 全19分野のキーリスト初期化 (例: "1_1", "pre1_10")
         const ALL_FILTER_KEYS = [
             ...EXAM_SPECS["1"].map(s => `1_${s.id}`),
             ...EXAM_SPECS["pre1"].map(s => `pre1_${s.id}`)
         ];
 
-        // 選択されているフィルターキー（デフォルトは全選択）
         let selectedFilterKeys = new Set(ALL_FILTER_KEYS);
 
         window.records = JSON.parse(localStorage.getItem('moshiholic_records')) || [];
@@ -541,10 +556,52 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('examDate').valueAsDate = new Date();
+            updateGradeSelectStyle();
             renderScoreInputs();
             initFilterModalDOM();
             refreshAllViews();
+            generateAppleTouchIcon();
         });
+
+        // 透過PNG「KANJIHOLICRAVEN_logo（文字なし）.png」をクリーム色（#FDFBF7）の背景付きデータURL化してapple-touch-iconに適用
+        function generateAppleTouchIcon() {
+            const img = new Image();
+            img.src = "./KANJIHOLICRAVEN_logo（文字なし）.png";
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = 180;
+                canvas.height = 180;
+                const ctx = canvas.getContext('2d');
+
+                // 背景色（クリーム色）
+                ctx.fillStyle = '#FDFBF7';
+                ctx.fillRect(0, 0, 180, 180);
+
+                // 中央配置（余白あり）
+                const padding = 15;
+                ctx.drawImage(img, padding, padding, 180 - padding * 2, 180 - padding * 2);
+
+                const dataUrl = canvas.toDataURL('image/png');
+                const appleIconLink = document.getElementById('appleTouchIcon');
+                if (appleIconLink) {
+                    appleIconLink.href = dataUrl;
+                }
+            };
+        }
+
+        function onGradeChange() {
+            updateGradeSelectStyle();
+            renderScoreInputs();
+        }
+
+        function updateGradeSelectStyle() {
+            const select = document.getElementById('examGrade');
+            if (select.value === '1') {
+                select.className = "w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-brand-red focus:outline-none transition grade-select-1";
+            } else {
+                select.className = "w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-brand-blue focus:outline-none transition grade-select-pre1";
+            }
+        }
 
         window.refreshAllViews = () => {
             renderCumulativeAnalytics();
@@ -729,6 +786,8 @@
             document.getElementById('cancelEditBtn').classList.add('hidden');
             document.getElementById('examTitle').value = '';
             document.getElementById('examDate').valueAsDate = new Date();
+            document.getElementById('examGrade').value = '1';
+            updateGradeSelectStyle();
             renderScoreInputs();
         }
 
@@ -746,6 +805,8 @@
             document.getElementById('cancelEditBtn').classList.remove('hidden');
 
             document.getElementById('examGrade').value = rec.grade;
+            updateGradeSelectStyle();
+
             document.getElementById('examDate').value = rec.date;
             document.getElementById('examTitle').value = rec.title;
 
@@ -772,7 +833,6 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // 累計成績サマリーのトグル処理
         function toggleSummaryChart(gradeKey) {
             const containerId = gradeKey === '1' ? 'summary1ChartContainer' : 'summaryPre1ChartContainer';
             const textId = gradeKey === '1' ? 'summary1ChartToggleText' : 'summaryPre1ChartToggleText';
@@ -789,7 +849,6 @@
             }
         }
 
-        // 累計成績サマリー＆全体分析レーダーチャートの計算・描画
         function renderCumulativeAnalytics() {
             ['1', 'pre1'].forEach(gradeKey => {
                 const gradeRecords = window.records.filter(r => r.grade === gradeKey);
@@ -1067,9 +1126,6 @@
             }
         }
 
-        // --- FILTER MODAL & LOGIC ---
-
-        // モーダル内チェックボックスリストの初期化DOM生成
         function initFilterModalDOM() {
             const container1 = document.getElementById('checkboxesGrade1');
             const containerPre1 = document.getElementById('checkboxesGradePre1');
@@ -1077,7 +1133,6 @@
             container1.innerHTML = '';
             containerPre1.innerHTML = '';
 
-            // 1級 (9項目)
             EXAM_SPECS["1"].forEach(sec => {
                 const key = `1_${sec.id}`;
                 const lbl = document.createElement('label');
@@ -1089,7 +1144,6 @@
                 container1.appendChild(lbl);
             });
 
-            // 準1級 (10項目)
             EXAM_SPECS["pre1"].forEach(sec => {
                 const key = `pre1_${sec.id}`;
                 const lbl = document.createElement('label');
@@ -1103,7 +1157,6 @@
         }
 
         function openFilterModal() {
-            // 現在の selectedFilterKeys の状態をチェックボックスに反映
             document.querySelectorAll('.filter-cb').forEach(cb => {
                 const key = cb.dataset.filterKey;
                 cb.checked = selectedFilterKeys.has(key);
@@ -1115,7 +1168,6 @@
             document.getElementById('filterModal').classList.add('hidden');
         }
 
-        // 一括選択操作（1級すべて / 準1級すべて / 全選択 / 全解除）
         function selectAllFilters(type) {
             document.querySelectorAll('.filter-cb').forEach(cb => {
                 const key = cb.dataset.filterKey;
@@ -1131,7 +1183,6 @@
             });
         }
 
-        // モーダルで「適用」をクリックした時の処理
         function applyFilterModal() {
             selectedFilterKeys.clear();
             document.querySelectorAll('.filter-cb:checked').forEach(cb => {
@@ -1160,7 +1211,6 @@
             }
         }
 
-        // 単語帳フラッシュカード化された誤答ノート描画
         function renderErrorList() {
             const container = document.getElementById('errorCardsContainer');
             container.innerHTML = '';
@@ -1170,8 +1220,6 @@
                 const spec = EXAM_SPECS[rec.grade];
                 rec.errors.forEach(err => {
                     const filterKey = `${rec.grade}_${err.secId}`;
-
-                    // 選択されていない分野はスキップ
                     if (!selectedFilterKeys.has(filterKey)) return;
 
                     const secInfo = spec.find(s => s.id === err.secId);
@@ -1206,7 +1254,6 @@
                             <span class="text-xs text-gray-400">${err.examTitle}</span>
                         </div>
                         
-                        <!-- 表面: 問題のみ -->
                         <div id="card-front-${idx}" class="my-2">
                             <div class="text-xs text-gray-400 font-semibold mb-1 flex items-center justify-between">
                                 <span><i class="fa-solid fa-circle-question mr-1 text-amber-500"></i>問題</span>
@@ -1215,7 +1262,6 @@
                             <div class="text-lg font-bold text-gray-800 py-2">${escapeHtml(err.question || '未入力')}</div>
                         </div>
 
-                        <!-- 裏面: 解答 & メモ (初期非表示) -->
                         <div id="card-back-${idx}" class="hidden my-2 pt-2 border-t border-dashed border-gray-200">
                             <div class="mb-2">
                                 <div class="text-xs text-gray-400 font-semibold mb-0.5"><i class="fa-solid fa-circle-check mr-1 text-emerald-500"></i>正解</div>
@@ -1229,7 +1275,6 @@
             });
         }
 
-        // フラッシュカードの開閉トグル
         function toggleFlashcard(idx) {
             const backElem = document.getElementById(`card-back-${idx}`);
             if (backElem) {
