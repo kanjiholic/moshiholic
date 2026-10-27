@@ -19,6 +19,7 @@
                         brand: {
                             red: '#C8102E',
                             darkred: '#9B0B21',
+                            blue: '#1E40AF',
                             bg: '#FDFBF7',
                             card: '#FFFFFF',
                             text: '#2C2C2C',
@@ -151,8 +152,71 @@
             </div>
         </section>
 
-        <!-- TAB 2: HISTORY -->
+        <!-- TAB 2: HISTORY & SUMMARY ANALYTICS -->
         <section id="view-history" class="hidden space-y-6">
+            
+            <!-- Cumulative Stats Section (新規追加: 累計成績サマリー) -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- 1級 累計カード -->
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-red-200 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between border-b pb-2 mb-3">
+                            <span class="px-2.5 py-1 rounded text-xs font-bold bg-red-100 text-brand-red flex items-center gap-1">
+                                <i class="fa-solid fa-trophy"></i> 1級 累計受験成績
+                            </span>
+                            <span id="summary1Count" class="text-xs text-gray-500 font-semibold">受験数: 0回</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-center my-3 bg-red-50/50 p-3 rounded-lg border border-red-100">
+                            <div>
+                                <div class="text-xs text-gray-500">平均点</div>
+                                <div id="summary1AvgScore" class="text-lg font-extrabold text-brand-red">0 <span class="text-xs font-normal">/200</span></div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-gray-500">合格</div>
+                                <div id="summary1Pass" class="text-lg font-bold text-emerald-600">0 回</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-gray-500">不合格</div>
+                                <div id="summary1Fail" class="text-lg font-bold text-gray-500">0 回</div>
+                            </div>
+                        </div>
+                        <div class="w-full h-60 mt-2">
+                            <canvas id="summary1ChartCanvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 準1級 累計カード -->
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-blue-200 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between border-b pb-2 mb-3">
+                            <span class="px-2.5 py-1 rounded text-xs font-bold bg-blue-100 text-blue-700 flex items-center gap-1">
+                                <i class="fa-solid fa-trophy"></i> 準1級 累計受験成績
+                            </span>
+                            <span id="summaryPre1Count" class="text-xs text-gray-500 font-semibold">受験数: 0回</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-center my-3 bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+                            <div>
+                                <div class="text-xs text-gray-500">平均点</div>
+                                <div id="summaryPre1AvgScore" class="text-lg font-extrabold text-blue-700">0 <span class="text-xs font-normal">/200</span></div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-gray-500">合格</div>
+                                <div id="summaryPre1Pass" class="text-lg font-bold text-emerald-600">0 回</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-gray-500">不合格</div>
+                                <div id="summaryPre1Fail" class="text-lg font-bold text-gray-500">0 回</div>
+                            </div>
+                        </div>
+                        <div class="w-full h-60 mt-2">
+                            <canvas id="summaryPre1ChartCanvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Table -->
             <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                 <h2 class="text-lg font-bold text-brand-red mb-4 flex items-center justify-between border-b pb-2">
                     <span><i class="fa-solid fa-clock-rotate-left"></i> 模試結果一覧</span>
@@ -228,13 +292,13 @@
                     <span id="modalExamDate" class="text-xs text-gray-500"></span>
                 </div>
                 <h2 id="modalExamTitle" class="text-xl font-bold text-gray-800"></h2>
-                <div id="modalScoreSummary" class="text-2xl font-extrabold text-brand-red mt-1"></div>
+                <div id="modalScoreSummary" class="text-2xl font-extrabold mt-1"></div>
             </div>
 
             <!-- Radar Chart Area -->
             <div class="mb-6 bg-gray-50 p-4 rounded-xl border border-gray-100 flex flex-col items-center">
                 <h3 class="text-sm font-bold text-gray-700 mb-2 w-full text-left flex items-center gap-1.5">
-                    <i class="fa-solid fa-chart-pie text-brand-red"></i> 得点率分析 (レーダーチャート)
+                    <i class="fa-solid fa-chart-pie text-brand-red"></i> 得点率・得点分析 (レーダーチャート)
                 </h3>
                 <div class="w-full max-w-md h-72">
                     <canvas id="radarChartCanvas"></canvas>
@@ -393,6 +457,8 @@
 
         window.records = JSON.parse(localStorage.getItem('moshiholic_records')) || [];
         let radarChartInstance = null;
+        let summaryChart1Instance = null;
+        let summaryChartPre1Instance = null;
 
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('examDate').valueAsDate = new Date();
@@ -402,6 +468,7 @@
         });
 
         window.refreshAllViews = () => {
+            renderCumulativeAnalytics();
             renderHistoryTable();
             renderErrorList();
         };
@@ -418,7 +485,10 @@
             activeTab.classList.add('tab-active');
             activeTab.classList.remove('text-gray-500');
 
-            if (tabName === 'history') renderHistoryTable();
+            if (tabName === 'history') {
+                renderCumulativeAnalytics();
+                renderHistoryTable();
+            }
             if (tabName === 'errors') {
                 updateFilterSectionOptions();
                 renderErrorList();
@@ -446,7 +516,6 @@
             calculateTotal();
         }
 
-        // 大問ごとの上限点数チェック＆自動補正
         function validateAndCalculate(input) {
             const max = parseInt(input.dataset.max, 10);
             let val = parseInt(input.value, 10);
@@ -507,7 +576,6 @@
             if (row) row.remove();
         }
 
-        // 保存（新規・修正共通）
         async function saveExamRecord() {
             const date = document.getElementById('examDate').value;
             const title = document.getElementById('examTitle').value.trim();
@@ -525,7 +593,7 @@
                 const secId = input.dataset.secId;
                 const max = parseInt(input.dataset.max, 10);
                 let score = parseInt(input.value) || 0;
-                if (score > max) score = max; // 念のため再チェック
+                if (score > max) score = max;
                 scores[secId] = score;
                 totalScore += score;
             });
@@ -543,7 +611,6 @@
             });
 
             if (editingId) {
-                // 既存レコードの更新
                 const index = window.records.findIndex(r => r.id == editingId);
                 if (index !== -1) {
                     window.records[index] = {
@@ -558,7 +625,6 @@
                 }
                 alert('模試結果を更新しました！');
             } else {
-                // 新規作成
                 const newRecord = {
                     id: Date.now(),
                     date,
@@ -577,7 +643,6 @@
             refreshAllViews();
         }
 
-        // フォームのリセット（新規モードへ）
         function resetFormState() {
             document.getElementById('editingRecordId').value = '';
             document.getElementById('formHeaderTitle').innerHTML = '<i class="fa-solid fa-file-signature"></i> 模試結果の記録';
@@ -589,7 +654,6 @@
             renderScoreInputs();
         }
 
-        // 過去データを入力フォームに呼び出して「修正」
         function editRecord(id) {
             const rec = window.records.find(r => r.id == id);
             if (!rec) return;
@@ -609,7 +673,6 @@
 
             renderScoreInputs();
 
-            // 大問スコアのセット
             document.querySelectorAll('.score-input').forEach(input => {
                 const secId = input.dataset.secId;
                 if (rec.scores && rec.scores[secId] !== undefined) {
@@ -618,7 +681,6 @@
             });
             calculateTotal();
 
-            // 誤答問題のセット
             const container = document.getElementById('errorRowsContainer');
             container.innerHTML = '';
             if (rec.errors && rec.errors.length > 0) {
@@ -632,7 +694,115 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // 履歴テーブルの描画（大問別内訳カンマ区切りを表示）
+        // 累計成績サマリー＆全体分析レーダーチャートの計算・描画
+        function renderCumulativeAnalytics() {
+            ['1', 'pre1'].forEach(gradeKey => {
+                const gradeRecords = window.records.filter(r => r.grade === gradeKey);
+                const count = gradeRecords.length;
+                const specs = EXAM_SPECS[gradeKey];
+
+                const isRed = gradeKey === '1';
+                const mainColor = isRed ? '#C8102E' : '#1E40AF';
+                const bgColor = isRed ? 'rgba(200, 16, 46, 0.2)' : 'rgba(30, 64, 175, 0.2)';
+                
+                const countElem = document.getElementById(gradeKey === '1' ? 'summary1Count' : 'summaryPre1Count');
+                const avgElem = document.getElementById(gradeKey === '1' ? 'summary1AvgScore' : 'summaryPre1AvgScore');
+                const passElem = document.getElementById(gradeKey === '1' ? 'summary1Pass' : 'summaryPre1Pass');
+                const failElem = document.getElementById(gradeKey === '1' ? 'summary1Fail' : 'summaryPre1Fail');
+                const canvasId = gradeKey === '1' ? 'summary1ChartCanvas' : 'summaryPre1ChartCanvas';
+
+                countElem.innerText = `受験数: ${count}回`;
+
+                if (count === 0) {
+                    avgElem.innerHTML = `0 <span class="text-xs font-normal">/200</span>`;
+                    passElem.innerText = `0 回`;
+                    failElem.innerText = `0 回`;
+
+                    // チャートの破棄
+                    if (gradeKey === '1' && summaryChart1Instance) { summaryChart1Instance.destroy(); summaryChart1Instance = null; }
+                    if (gradeKey === 'pre1' && summaryChartPre1Instance) { summaryChartPre1Instance.destroy(); summaryChartPre1Instance = null; }
+                    return;
+                }
+
+                let totalSum = 0;
+                let passCount = 0;
+                let failCount = 0;
+                const sectionTotals = {};
+                specs.forEach(s => sectionTotals[s.id] = 0);
+
+                gradeRecords.forEach(r => {
+                    totalSum += r.totalScore;
+                    if (r.totalScore >= 160) passCount++; else failCount++;
+                    specs.forEach(s => {
+                        sectionTotals[s.id] += r.scores ? (r.scores[s.id] ?? 0) : 0;
+                    });
+                });
+
+                const avgScore = Math.round(totalSum / count);
+                avgElem.innerHTML = `${avgScore} <span class="text-xs font-normal">/200</span>`;
+                passElem.innerText = `${passCount} 回`;
+                failElem.innerText = `${failCount} 回`;
+
+                // 大問ごとの平均点・平均得点率
+                const labels = specs.map(s => s.name.replace(/（.）/, ''));
+                const rates = specs.map(s => {
+                    const avgSecScore = sectionTotals[s.id] / count;
+                    return Math.round((avgSecScore / s.max) * 100);
+                });
+                const avgScoresList = specs.map(s => (sectionTotals[s.id] / count).toFixed(1));
+
+                const ctx = document.getElementById(canvasId).getContext('2d');
+                const chartConfig = {
+                    type: 'radar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: '累計平均得点率 (%)',
+                            data: rates,
+                            backgroundColor: bgColor,
+                            borderColor: mainColor,
+                            borderWidth: 2,
+                            pointBackgroundColor: mainColor
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            r: {
+                                min: 0,
+                                max: 100,
+                                ticks: { stepSize: 20, display: false },
+                                pointLabels: { font: { size: 9 } }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const idx = context.dataIndex;
+                                        const secSpec = specs[idx];
+                                        const rate = context.raw;
+                                        const avgSc = avgScoresList[idx];
+                                        return `平均得点率: ${rate}% (平均 ${avgSc} / ${secSpec.max}点)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                };
+
+                if (gradeKey === '1') {
+                    if (summaryChart1Instance) summaryChart1Instance.destroy();
+                    summaryChart1Instance = new Chart(ctx, chartConfig);
+                } else {
+                    if (summaryChartPre1Instance) summaryChartPre1Instance.destroy();
+                    summaryChartPre1Instance = new Chart(ctx, chartConfig);
+                }
+            });
+        }
+
         function renderHistoryTable() {
             const tbody = document.getElementById('historyTableBody');
             tbody.innerHTML = '';
@@ -648,7 +818,6 @@
                 const gradeLabel = rec.grade === '1' ? '1級' : '準1級';
                 const specs = EXAM_SPECS[rec.grade];
 
-                // (a, b, c, ...) のカンマ区切り文字列を生成
                 const scoreList = specs.map(s => rec.scores ? (rec.scores[s.id] ?? 0) : 0);
                 const scoreString = `(${scoreList.join(', ')})`;
 
@@ -671,7 +840,6 @@
             });
         }
 
-        // 詳細モーダルを表示
         function openDetailModal(id) {
             const rec = window.records.find(r => r.id == id);
             if (!rec) return;
@@ -681,7 +849,10 @@
 
             document.getElementById('modalExamTitle').innerText = rec.title;
             document.getElementById('modalExamDate').innerText = rec.date;
-            document.getElementById('modalScoreSummary').innerText = `${rec.totalScore} / 200 点 (${Math.round((rec.totalScore/200)*100)}%) - ${isPass ? '合格圏内' : '不合格'}`;
+            
+            const summaryElem = document.getElementById('modalScoreSummary');
+            summaryElem.innerText = `${rec.totalScore} / 200 点 (${Math.round((rec.totalScore/200)*100)}%) - ${isPass ? '合格圏内' : '不合格'}`;
+            summaryElem.className = `text-2xl font-extrabold mt-1 ${rec.grade === '1' ? 'text-brand-red' : 'text-blue-700'}`;
 
             const badge = document.getElementById('modalGradeBadge');
             badge.innerText = rec.grade === '1' ? '1級' : '準1級';
@@ -694,7 +865,6 @@
             grid.innerHTML = '';
             specs.forEach(s => {
                 const score = rec.scores ? (rec.scores[s.id] ?? 0) : 0;
-                const pct = Math.round((score / s.max) * 100);
                 const div = document.createElement('div');
                 div.className = "bg-gray-50 p-2 rounded border border-gray-200 flex justify-between items-center";
                 div.innerHTML = `
@@ -714,7 +884,7 @@
                     const div = document.createElement('div');
                     div.className = "bg-gray-50 p-3 rounded-lg border border-gray-200 text-xs";
                     div.innerHTML = `
-                        <div class="font-bold text-brand-red mb-1">${secName}</div>
+                        <div class="font-bold ${rec.grade==='1'?'text-brand-red':'text-blue-700'} mb-1">${secName}</div>
                         <div class="grid grid-cols-2 gap-2">
                             <div><span class="text-gray-400">問題:</span> <span class="font-bold text-gray-800">${escapeHtml(err.question)}</span></div>
                             <div><span class="text-gray-400">正解:</span> <span class="font-bold text-emerald-600">${escapeHtml(err.answer)}</span></div>
@@ -727,8 +897,8 @@
                 errList.innerHTML = `<div class="text-xs text-gray-400 italic">登録された誤答問題はありません。</div>`;
             }
 
-            // レーダーチャート描画
-            renderRadarChart(specs, rec.scores || {});
+            // 個別模試レーダーチャート描画（得点併記＆級別カラー対応）
+            renderRadarChart(specs, rec.scores || {}, rec.grade);
 
             document.getElementById('detailModal').classList.remove('hidden');
         }
@@ -737,14 +907,18 @@
             document.getElementById('detailModal').classList.add('hidden');
         }
 
-        // Chart.js レーダーチャート生成
-        function renderRadarChart(specs, scores) {
+        // 個別模試用レーダーチャート描画
+        function renderRadarChart(specs, scores, grade) {
             const ctx = document.getElementById('radarChartCanvas').getContext('2d');
-            const labels = specs.map(s => s.name.replace(/（.）/, '')); // 簡略表示
+            const labels = specs.map(s => s.name.replace(/（.）/, ''));
             const dataRates = specs.map(s => {
                 const score = scores[s.id] ?? 0;
                 return Math.round((score / s.max) * 100);
             });
+
+            const isRed = grade === '1';
+            const mainColor = isRed ? '#C8102E' : '#1E40AF';
+            const bgColor = isRed ? 'rgba(200, 16, 46, 0.2)' : 'rgba(30, 64, 175, 0.2)';
 
             if (radarChartInstance) {
                 radarChartInstance.destroy();
@@ -757,10 +931,10 @@
                     datasets: [{
                         label: '得点率 (%)',
                         data: dataRates,
-                        backgroundColor: 'rgba(200, 16, 46, 0.2)',
-                        borderColor: '#C8102E',
+                        backgroundColor: bgColor,
+                        borderColor: mainColor,
                         borderWidth: 2,
-                        pointBackgroundColor: '#C8102E'
+                        pointBackgroundColor: mainColor
                     }]
                 },
                 options: {
@@ -775,7 +949,18 @@
                         }
                     },
                     plugins: {
-                        legend: { display: false }
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const idx = context.dataIndex;
+                                    const secSpec = specs[idx];
+                                    const rate = context.raw;
+                                    const score = scores[secSpec.id] ?? 0;
+                                    return `得点率: ${rate}% (${score} / ${secSpec.max}点)`;
+                                }
+                            }
+                        }
                     }
                 }
             });
