@@ -650,7 +650,7 @@
                 iconCtx.drawImage(img, minX, minY, cropWidth, cropHeight, drawX, drawY, drawW, drawH);
                 document.getElementById('appleTouchIcon').href = iconCanvas.toDataURL('image/png');
 
-                // カレンダー再描画（スタンプ画像を更新）
+                // カレンダー再描画
                 renderCalendar();
             };
         }
@@ -668,7 +668,7 @@
             renderErrorList();
         };
 
-        // --- コンパクト＆スタイリッシュ カレンダー描画 ---
+        // --- カレンダー描画（枠内ぴったり配置） ---
         function renderCalendar() {
             const year = currentCalendarDate.getFullYear();
             const month = currentCalendarDate.getMonth();
@@ -709,16 +709,18 @@
                 if (dayOfWeek === 6) dayColorClass = "text-blue-500 font-bold";
 
                 const cell = document.createElement('div');
-                cell.className = `bg-white rounded h-10 sm:h-12 p-0.5 border flex flex-col justify-between items-center cursor-pointer transition hover:border-brand-red relative ${isToday ? 'border-2 border-brand-red bg-red-50/20' : 'border-gray-200'}`;
+                cell.className = `bg-white rounded h-10 sm:h-12 border overflow-hidden flex flex-col justify-between items-center cursor-pointer transition hover:border-brand-red relative ${isToday ? 'border-2 border-brand-red bg-red-50/20' : 'border-gray-200'}`;
                 cell.onclick = () => selectCalendarDate(dateStr);
 
                 cell.innerHTML = `
-                    <div class="w-full text-left pl-1">
+                    <div class="w-full text-left pl-1 pt-0.5 z-10 relative pointer-events-none">
                         <span class="text-[10px] sm:text-xs ${dayColorClass}">${day}</span>
                     </div>
-                    <div class="flex-grow flex items-center justify-center w-full pb-0.5">
-                        ${hasExam ? `<img src="${stampSrc}" alt="Stamp" class="w-7 h-7 sm:w-8 sm:h-8 object-contain drop-shadow-sm" onerror="this.src='./KANJIHOLICRAVEN_logo.png'">` : ''}
-                    </div>
+                    ${hasExam ? `
+                        <div class="absolute inset-0 flex items-center justify-center p-0.5">
+                            <img src="${stampSrc}" alt="Stamp" class="w-full h-full object-contain drop-shadow-sm opacity-90" onerror="this.src='./KANJIHOLICRAVEN_logo.png'">
+                        </div>
+                    ` : ''}
                 `;
                 grid.appendChild(cell);
             }
@@ -1048,7 +1050,8 @@
                     });
                 });
 
-                const avgScore = Math.round(totalSum / count);
+                // 平均点を小数点第2位まで計算
+                const avgScore = (totalSum / count).toFixed(2);
                 avgElem.innerHTML = `${avgScore} <span class="text-xs font-normal">/200</span>`;
                 passElem.innerText = `${passCount} 回`;
                 failElem.innerText = `${failCount} 回`;
@@ -1436,6 +1439,7 @@
             }
         }
 
+        // CSVエクスポート（ファイル名: moshiholic_YYYY-MM-DD.csv）
         function exportCSV() {
             let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
             csvContent += "問題,正解,級,大問,模試の名称,メモ\n";
@@ -1467,7 +1471,7 @@
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `moshiholic_errors_${new Date().toISOString().slice(0,10)}.csv`);
+            link.setAttribute("download", `moshiholic_${new Date().toISOString().slice(0,10)}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
