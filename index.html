@@ -114,6 +114,42 @@
 
         <!-- TAB 1: INPUT / EDIT FORM -->
         <section id="view-input" class="space-y-6">
+            
+            <!-- カレンダー表示セクション（新規追加） -->
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+                <div class="flex items-center justify-between border-b pb-3 mb-4">
+                    <h2 class="text-base font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fa-regular fa-calendar-check text-brand-red"></i> 模試受検カレンダー
+                    </h2>
+                    <div class="flex items-center gap-2">
+                        <button onclick="changeCalendarMonth(-1)" class="w-8 h-8 rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center justify-center text-gray-600 transition">
+                            <i class="fa-solid fa-chevron-left text-xs"></i>
+                        </button>
+                        <span id="calendarMonthTitle" class="text-sm font-extrabold text-gray-700 min-w-[100px] text-center"></span>
+                        <button onclick="changeCalendarMonth(1)" class="w-8 h-8 rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center justify-center text-gray-600 transition">
+                            <i class="fa-solid fa-chevron-right text-xs"></i>
+                        </button>
+                        <button onclick="resetCalendarToCurrentMonth()" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-2.5 py-1.5 rounded-lg transition font-semibold ml-1">
+                            今月
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 曜日のヘッダー (日曜始まり) -->
+                <div class="grid grid-cols-7 gap-1 text-center font-bold text-xs mb-2">
+                    <div class="text-red-500 py-1 bg-red-50/50 rounded">日</div>
+                    <div class="text-gray-600 py-1">月</div>
+                    <div class="text-gray-600 py-1">火</div>
+                    <div class="text-gray-600 py-1">水</div>
+                    <div class="text-gray-600 py-1">木</div>
+                    <div class="text-gray-600 py-1">金</div>
+                    <div class="text-blue-500 py-1 bg-blue-50/50 rounded">土</div>
+                </div>
+
+                <!-- 日付グリッド -->
+                <div id="calendarGrid" class="grid grid-cols-7 gap-1 text-xs"></div>
+            </div>
+
             <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                 <div class="flex justify-between items-center border-b pb-2 mb-4">
                     <h2 id="formHeaderTitle" class="text-lg font-bold text-brand-red flex items-center gap-2">
@@ -541,6 +577,8 @@
         window.records = JSON.parse(localStorage.getItem('moshiholic_records')) || [];
         
         let selectedFilterKeys = new Set();
+        let currentCalendarDate = new Date(); // カレンダー表示用年月
+
         let radarChartInstance = null;
         let summaryChart1Instance = null;
         let summaryChartPre1Instance = null;
@@ -554,7 +592,6 @@
             refreshAllViews();
         });
 
-        // iPhone ホーム画面用 Web Clip アイコンを動的生成（余白をクロップしてロゴを極力大きく描画）
         function generateAppleTouchIcon() {
             const canvas = document.createElement('canvas');
             canvas.width = 180;
@@ -625,10 +662,88 @@
         }
 
         window.refreshAllViews = () => {
+            renderCalendar();
             renderCumulativeAnalytics();
             renderHistoryTable();
             renderErrorList();
         };
+
+        // --- カレンダー描画機能 (曜日は日曜始まり) ---
+        function renderCalendar() {
+            const year = currentCalendarDate.getFullYear();
+            const month = currentCalendarDate.getMonth(); // 0-indexed
+
+            document.getElementById('calendarMonthTitle').innerText = `${year}年 ${month + 1}月`;
+
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            
+            const startDayOfWeek = firstDay.getDay(); // 0: 日曜, 1: 月曜 ...
+            const totalDays = lastDay.getDate();
+
+            // 模試が実施された日付（YYYY-MM-DD）のセットを作成
+            const examDatesSet = new Set(window.records.map(r => r.date));
+
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+
+            // 前月の埋め合わせ空白セル
+            for (let i = 0; i < startDayOfWeek; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = "bg-gray-50/50 rounded-lg h-14 sm:h-16 border border-gray-100/50";
+                grid.appendChild(emptyCell);
+            }
+
+            // 当月の日付セル生成
+            const todayStr = new Date().toISOString().slice(0, 10);
+
+            for (let day = 1; day <= totalDays; day++) {
+                const mStr = String(month + 1).padStart(2, '0');
+                const dStr = String(day).padStart(2, '0');
+                const dateStr = `${year}-${mStr}-${dStr}`;
+
+                const hasExam = examDatesSet.has(dateStr);
+                const isToday = dateStr === todayStr;
+
+                const dayOfWeek = new Date(year, month, day).getDay();
+                let dayColorClass = "text-gray-700";
+                if (dayOfWeek === 0) dayColorClass = "text-red-500 font-bold";
+                if (dayOfWeek === 6) dayColorClass = "text-blue-500 font-bold";
+
+                const cell = document.createElement('div');
+                cell.className = `bg-white rounded-lg h-14 sm:h-16 p-1 border flex flex-col justify-between items-center cursor-pointer transition hover:border-brand-red relative ${isToday ? 'border-brand-red ring-1 ring-brand-red/30' : 'border-gray-200'}`;
+                cell.onclick = () => selectCalendarDate(dateStr);
+
+                cell.innerHTML = `
+                    <div class="w-full flex justify-between items-center">
+                        <span class="text-[11px] sm:text-xs ${dayColorClass}">${day}</span>
+                        ${isToday ? '<span class="text-[9px] bg-red-100 text-brand-red font-bold px-1 rounded">今日</span>' : ''}
+                    </div>
+                    <div class="flex-grow flex items-center justify-center w-full">
+                        ${hasExam ? `<img src="./KANJIHOLICRAVEN_logo（文字なし）.png" alt="Stamp" class="w-7 h-7 sm:w-8 sm:h-8 object-contain drop-shadow-sm" onerror="this.src='./KANJIHOLICRAVEN_logo.png'">` : ''}
+                    </div>
+                `;
+                grid.appendChild(cell);
+            }
+        }
+
+        function changeCalendarMonth(delta) {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + delta);
+            renderCalendar();
+        }
+
+        function resetCalendarToCurrentMonth() {
+            currentCalendarDate = new Date();
+            renderCalendar();
+        }
+
+        function selectCalendarDate(dateStr) {
+            document.getElementById('examDate').value = dateStr;
+            const inputElem = document.getElementById('examDate');
+            inputElem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            inputElem.classList.add('ring-2', 'ring-brand-red');
+            setTimeout(() => inputElem.classList.remove('ring-2', 'ring-brand-red'), 1200);
+        }
 
         function switchTab(tabName) {
             ['input', 'history', 'errors'].forEach(t => {
@@ -642,6 +757,9 @@
             activeTab.classList.add('tab-active');
             activeTab.classList.remove('text-gray-500');
 
+            if (tabName === 'input') {
+                renderCalendar();
+            }
             if (tabName === 'history') {
                 renderCumulativeAnalytics();
                 renderHistoryTable();
@@ -1321,7 +1439,6 @@
             }
         }
 
-        // CSVエクスポート（6列構成: 問題, 正解, 級, 大問, 模試の名称, メモ）
         function exportCSV() {
             let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
             csvContent += "問題,正解,級,大問,模試の名称,メモ\n";
