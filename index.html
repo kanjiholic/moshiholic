@@ -564,7 +564,6 @@
             const img = new Image();
             img.src = './KANJIHOLICRAVEN_logo（文字なし）.png';
             img.onload = () => {
-                // 一時キャンバスで画像のバウンディングボックス（描画内容がある範囲）を取得
                 const tempCanvas = document.createElement('canvas');
                 tempCanvas.width = img.width;
                 tempCanvas.height = img.height;
@@ -577,7 +576,7 @@
                 for (let y = 0; y < img.height; y++) {
                     for (let x = 0; x < img.width; x++) {
                         const alpha = imgData[(y * img.width + x) * 4 + 3];
-                        if (alpha > 10) { // 不透明ピクセル
+                        if (alpha > 10) {
                             if (x < minX) minX = x;
                             if (x > maxX) maxX = x;
                             if (y < minY) minY = y;
@@ -586,7 +585,6 @@
                     }
                 }
 
-                // 描画内容がない場合は全域を使用
                 if (minX >= maxX || minY >= maxY) {
                     minX = 0; minY = 0; maxX = img.width; maxY = img.height;
                 }
@@ -594,11 +592,9 @@
                 const cropWidth = maxX - minX;
                 const cropHeight = maxY - minY;
 
-                // 背景色: #FDFBF7
                 ctx.fillStyle = '#FDFBF7';
                 ctx.fillRect(0, 0, 180, 180);
 
-                // アスペクト比を維持しながら最大化描画 (Padding: 12px)
                 const padding = 12;
                 const targetSize = 180 - (padding * 2);
                 const scale = Math.min(targetSize / cropWidth, targetSize / cropHeight);
