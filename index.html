@@ -115,35 +115,32 @@
         <!-- TAB 1: INPUT / EDIT FORM -->
         <section id="view-input" class="space-y-6">
             
-            <!-- カレンダー表示セクション（新規追加） -->
-            <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-                <div class="flex items-center justify-between border-b pb-3 mb-4">
-                    <h2 class="text-base font-bold text-gray-800 flex items-center gap-2">
-                        <i class="fa-regular fa-calendar-check text-brand-red"></i> 模試受検カレンダー
-                    </h2>
+            <!-- コンパクト＆スタイリッシュ カレンダー -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                <div class="flex items-center justify-between mb-3 border-b pb-2">
                     <div class="flex items-center gap-2">
-                        <button onclick="changeCalendarMonth(-1)" class="w-8 h-8 rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center justify-center text-gray-600 transition">
+                        <button onclick="changeCalendarMonth(-1)" class="w-7 h-7 rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center justify-center text-gray-600 transition">
                             <i class="fa-solid fa-chevron-left text-xs"></i>
                         </button>
-                        <span id="calendarMonthTitle" class="text-sm font-extrabold text-gray-700 min-w-[100px] text-center"></span>
-                        <button onclick="changeCalendarMonth(1)" class="w-8 h-8 rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center justify-center text-gray-600 transition">
+                        <span id="calendarMonthTitle" class="text-sm font-bold text-gray-800 tracking-wide min-w-[90px] text-center"></span>
+                        <button onclick="changeCalendarMonth(1)" class="w-7 h-7 rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center justify-center text-gray-600 transition">
                             <i class="fa-solid fa-chevron-right text-xs"></i>
                         </button>
-                        <button onclick="resetCalendarToCurrentMonth()" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-2.5 py-1.5 rounded-lg transition font-semibold ml-1">
-                            今月
-                        </button>
                     </div>
+                    <button onclick="resetCalendarToCurrentMonth()" class="text-[11px] bg-gray-100 hover:bg-gray-200 text-gray-600 px-2.5 py-1 rounded-md transition font-semibold">
+                        今月
+                    </button>
                 </div>
 
                 <!-- 曜日のヘッダー (日曜始まり) -->
-                <div class="grid grid-cols-7 gap-1 text-center font-bold text-xs mb-2">
-                    <div class="text-red-500 py-1 bg-red-50/50 rounded">日</div>
-                    <div class="text-gray-600 py-1">月</div>
-                    <div class="text-gray-600 py-1">火</div>
-                    <div class="text-gray-600 py-1">水</div>
-                    <div class="text-gray-600 py-1">木</div>
-                    <div class="text-gray-600 py-1">金</div>
-                    <div class="text-blue-500 py-1 bg-blue-50/50 rounded">土</div>
+                <div class="grid grid-cols-7 gap-1 text-center font-bold text-[11px] mb-1">
+                    <div class="text-red-500 py-0.5">日</div>
+                    <div class="text-gray-500 py-0.5">月</div>
+                    <div class="text-gray-500 py-0.5">火</div>
+                    <div class="text-gray-500 py-0.5">水</div>
+                    <div class="text-gray-500 py-0.5">木</div>
+                    <div class="text-gray-500 py-0.5">金</div>
+                    <div class="text-blue-500 py-0.5">土</div>
                 </div>
 
                 <!-- 日付グリッド -->
@@ -578,13 +575,14 @@
         
         let selectedFilterKeys = new Set();
         let currentCalendarDate = new Date(); // カレンダー表示用年月
+        let croppedStampDataUrl = null; // 余白カット済みのスタンプ画像データ
 
         let radarChartInstance = null;
         let summaryChart1Instance = null;
         let summaryChartPre1Instance = null;
 
         document.addEventListener('DOMContentLoaded', () => {
-            generateAppleTouchIcon();
+            generateAppleTouchIconAndStamp();
             document.getElementById('examDate').valueAsDate = new Date();
             initFilterState();
             renderFilterCheckboxes();
@@ -592,12 +590,8 @@
             refreshAllViews();
         });
 
-        function generateAppleTouchIcon() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 180;
-            canvas.height = 180;
-            const ctx = canvas.getContext('2d');
-
+        // iPhone ホーム画面用アイコン & クロップ済みスタンプ画像の生成
+        function generateAppleTouchIconAndStamp() {
             const img = new Image();
             img.src = './KANJIHOLICRAVEN_logo（文字なし）.png';
             img.onload = () => {
@@ -629,8 +623,21 @@
                 const cropWidth = maxX - minX;
                 const cropHeight = maxY - minY;
 
-                ctx.fillStyle = '#FDFBF7';
-                ctx.fillRect(0, 0, 180, 180);
+                // 1. クロップ済みスタンプ用DataURL生成
+                const stampCanvas = document.createElement('canvas');
+                stampCanvas.width = cropWidth;
+                stampCanvas.height = cropHeight;
+                const stampCtx = stampCanvas.getContext('2d');
+                stampCtx.drawImage(img, minX, minY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+                croppedStampDataUrl = stampCanvas.toDataURL('image/png');
+
+                // 2. iOSアイコン生成
+                const iconCanvas = document.createElement('canvas');
+                iconCanvas.width = 180;
+                iconCanvas.height = 180;
+                const iconCtx = iconCanvas.getContext('2d');
+                iconCtx.fillStyle = '#FDFBF7';
+                iconCtx.fillRect(0, 0, 180, 180);
 
                 const padding = 12;
                 const targetSize = 180 - (padding * 2);
@@ -640,18 +647,11 @@
                 const drawX = (180 - drawW) / 2;
                 const drawY = (180 - drawH) / 2;
 
-                ctx.drawImage(img, minX, minY, cropWidth, cropHeight, drawX, drawY, drawW, drawH);
-                document.getElementById('appleTouchIcon').href = canvas.toDataURL('image/png');
-            };
-            img.onerror = () => {
-                const fallbackImg = new Image();
-                fallbackImg.src = './KANJIHOLICRAVEN_logo.png';
-                fallbackImg.onload = () => {
-                    ctx.fillStyle = '#FDFBF7';
-                    ctx.fillRect(0, 0, 180, 180);
-                    ctx.drawImage(fallbackImg, 10, 10, 160, 160);
-                    document.getElementById('appleTouchIcon').href = canvas.toDataURL('image/png');
-                };
+                iconCtx.drawImage(img, minX, minY, cropWidth, cropHeight, drawX, drawY, drawW, drawH);
+                document.getElementById('appleTouchIcon').href = iconCanvas.toDataURL('image/png');
+
+                // カレンダー再描画（スタンプ画像を更新）
+                renderCalendar();
             };
         }
 
@@ -668,34 +668,32 @@
             renderErrorList();
         };
 
-        // --- カレンダー描画機能 (曜日は日曜始まり) ---
+        // --- コンパクト＆スタイリッシュ カレンダー描画 ---
         function renderCalendar() {
             const year = currentCalendarDate.getFullYear();
-            const month = currentCalendarDate.getMonth(); // 0-indexed
+            const month = currentCalendarDate.getMonth();
 
             document.getElementById('calendarMonthTitle').innerText = `${year}年 ${month + 1}月`;
 
             const firstDay = new Date(year, month, 1);
             const lastDay = new Date(year, month + 1, 0);
             
-            const startDayOfWeek = firstDay.getDay(); // 0: 日曜, 1: 月曜 ...
+            const startDayOfWeek = firstDay.getDay(); // 0: 日曜
             const totalDays = lastDay.getDate();
 
-            // 模試が実施された日付（YYYY-MM-DD）のセットを作成
             const examDatesSet = new Set(window.records.map(r => r.date));
-
             const grid = document.getElementById('calendarGrid');
             grid.innerHTML = '';
 
-            // 前月の埋め合わせ空白セル
+            // 前月空白セル
             for (let i = 0; i < startDayOfWeek; i++) {
                 const emptyCell = document.createElement('div');
-                emptyCell.className = "bg-gray-50/50 rounded-lg h-14 sm:h-16 border border-gray-100/50";
+                emptyCell.className = "bg-gray-50/30 rounded h-10 sm:h-12 border border-gray-100/30";
                 grid.appendChild(emptyCell);
             }
 
-            // 当月の日付セル生成
             const todayStr = new Date().toISOString().slice(0, 10);
+            const stampSrc = croppedStampDataUrl || './KANJIHOLICRAVEN_logo（文字なし）.png';
 
             for (let day = 1; day <= totalDays; day++) {
                 const mStr = String(month + 1).padStart(2, '0');
@@ -706,21 +704,20 @@
                 const isToday = dateStr === todayStr;
 
                 const dayOfWeek = new Date(year, month, day).getDay();
-                let dayColorClass = "text-gray-700";
+                let dayColorClass = "text-gray-700 font-semibold";
                 if (dayOfWeek === 0) dayColorClass = "text-red-500 font-bold";
                 if (dayOfWeek === 6) dayColorClass = "text-blue-500 font-bold";
 
                 const cell = document.createElement('div');
-                cell.className = `bg-white rounded-lg h-14 sm:h-16 p-1 border flex flex-col justify-between items-center cursor-pointer transition hover:border-brand-red relative ${isToday ? 'border-brand-red ring-1 ring-brand-red/30' : 'border-gray-200'}`;
+                cell.className = `bg-white rounded h-10 sm:h-12 p-0.5 border flex flex-col justify-between items-center cursor-pointer transition hover:border-brand-red relative ${isToday ? 'border-2 border-brand-red bg-red-50/20' : 'border-gray-200'}`;
                 cell.onclick = () => selectCalendarDate(dateStr);
 
                 cell.innerHTML = `
-                    <div class="w-full flex justify-between items-center">
-                        <span class="text-[11px] sm:text-xs ${dayColorClass}">${day}</span>
-                        ${isToday ? '<span class="text-[9px] bg-red-100 text-brand-red font-bold px-1 rounded">今日</span>' : ''}
+                    <div class="w-full text-left pl-1">
+                        <span class="text-[10px] sm:text-xs ${dayColorClass}">${day}</span>
                     </div>
-                    <div class="flex-grow flex items-center justify-center w-full">
-                        ${hasExam ? `<img src="./KANJIHOLICRAVEN_logo（文字なし）.png" alt="Stamp" class="w-7 h-7 sm:w-8 sm:h-8 object-contain drop-shadow-sm" onerror="this.src='./KANJIHOLICRAVEN_logo.png'">` : ''}
+                    <div class="flex-grow flex items-center justify-center w-full pb-0.5">
+                        ${hasExam ? `<img src="${stampSrc}" alt="Stamp" class="w-7 h-7 sm:w-8 sm:h-8 object-contain drop-shadow-sm" onerror="this.src='./KANJIHOLICRAVEN_logo.png'">` : ''}
                     </div>
                 `;
                 grid.appendChild(cell);
